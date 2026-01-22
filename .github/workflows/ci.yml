@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Validate agents
+        run: npx tsx scripts/validate-agents.ts
+
+      - name: Run unit tests
+        run: |
+          npx tsx tests/source-parser.test.ts
+          npx tsx tests/installer.test.ts
+
+      - name: Run e2e tests
+        run: npx tsx tests/e2e/install.test.ts
+
+      - name: Build
+        run: npm run build
+
+  sync-agents:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync agents
+        run: npx tsx scripts/sync-agents.ts
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git diff --quiet README.md package.json || (git add README.md package.json && git commit -m "chore: update README and package.json with latest agents")
+
+      - name: Push changes
+        run: git push
