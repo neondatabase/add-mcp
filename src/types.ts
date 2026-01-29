@@ -2,27 +2,27 @@
  * Supported agent types
  */
 export type AgentType =
-  | 'claude-code'
-  | 'claude-desktop'
-  | 'codex'
-  | 'cursor'
-  | 'gemini-cli'
-  | 'goose'
-  | 'opencode'
-  | 'vscode'
-  | 'zed';
+  | "claude-code"
+  | "claude-desktop"
+  | "codex"
+  | "cursor"
+  | "gemini-cli"
+  | "goose"
+  | "opencode"
+  | "vscode"
+  | "zed";
 
 /**
  * Aliases that map to canonical agent types
  */
 export const agentAliases: Record<string, AgentType> = {
-  'github-copilot': 'vscode',
+  "github-copilot": "vscode",
 };
 
 /**
  * Config file format types
  */
-export type ConfigFormat = 'json' | 'yaml' | 'toml';
+export type ConfigFormat = "json" | "yaml" | "toml";
 
 /**
  * Agent configuration
@@ -49,7 +49,7 @@ export interface AgentConfig {
 /**
  * Parsed source input types
  */
-export type SourceType = 'remote' | 'package' | 'command';
+export type SourceType = "remote" | "package" | "command";
 
 /**
  * Parsed source result
@@ -67,7 +67,7 @@ export interface ParsedSource {
  */
 export interface McpServerConfig {
   /** For remote servers */
-  type?: 'http' | 'sse';
+  type?: "http" | "sse";
   url?: string;
   headers?: Record<string, string>;
   /** For local stdio servers */

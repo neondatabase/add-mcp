@@ -6,7 +6,7 @@
  * Run with: npx tsx scripts/validate-agents.ts
  */
 
-import { agents } from '../src/agents.js';
+import { agents } from "../src/agents.js";
 
 let hasErrors = false;
 
@@ -23,14 +23,16 @@ function success(message: string) {
 const displayNames = new Map<string, string>();
 for (const [key, config] of Object.entries(agents)) {
   if (displayNames.has(config.displayName)) {
-    error(`Duplicate display name "${config.displayName}" in agents: ${displayNames.get(config.displayName)}, ${key}`);
+    error(
+      `Duplicate display name "${config.displayName}" in agents: ${displayNames.get(config.displayName)}, ${key}`,
+    );
   } else {
     displayNames.set(config.displayName, key);
   }
 }
 
 if (!hasErrors) {
-  success('No duplicate display names');
+  success("No duplicate display names");
 }
 
 // Check for duplicate config keys (for same format)
@@ -40,12 +42,12 @@ for (const [key, config] of Object.entries(agents)) {
     configKeysByFormat.set(config.format, new Map());
   }
   const formatMap = configKeysByFormat.get(config.format)!;
-  
+
   // It's OK to have the same config key for different agents (like mcpServers)
   // Just log for informational purposes
 }
 
-success('Config key validation passed');
+success("Config key validation passed");
 
 // Check that all agents have required fields
 for (const [key, config] of Object.entries(agents)) {
@@ -70,7 +72,7 @@ for (const [key, config] of Object.entries(agents)) {
 }
 
 if (!hasErrors) {
-  success('All agents have required fields');
+  success("All agents have required fields");
 }
 
 // Summary
@@ -78,8 +80,8 @@ console.log();
 console.log(`Total agents: ${Object.keys(agents).length}`);
 
 if (hasErrors) {
-  console.log('\nValidation failed!');
+  console.log("\nValidation failed!");
   process.exit(1);
 } else {
-  console.log('\nValidation passed!');
+  console.log("\nValidation passed!");
 }

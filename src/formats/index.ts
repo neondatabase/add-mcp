@@ -1,20 +1,20 @@
-import type { ConfigFile, ConfigFormat } from '../types.js';
-import { readJsonConfig, writeJsonConfig, setNestedValue } from './json.js';
-import { readYamlConfig, writeYamlConfig } from './yaml.js';
-import { readTomlConfig, writeTomlConfig } from './toml.js';
+import type { ConfigFile, ConfigFormat } from "../types.js";
+import { readJsonConfig, writeJsonConfig, setNestedValue } from "./json.js";
+import { readYamlConfig, writeYamlConfig } from "./yaml.js";
+import { readTomlConfig, writeTomlConfig } from "./toml.js";
 
-export { setNestedValue } from './json.js';
+export { setNestedValue } from "./json.js";
 
 /**
  * Read a config file based on format
  */
 export function readConfig(filePath: string, format: ConfigFormat): ConfigFile {
   switch (format) {
-    case 'json':
+    case "json":
       return readJsonConfig(filePath);
-    case 'yaml':
+    case "yaml":
       return readYamlConfig(filePath);
-    case 'toml':
+    case "toml":
       return readTomlConfig(filePath);
     default:
       throw new Error(`Unsupported config format: ${format}`);
@@ -28,16 +28,16 @@ export function writeConfig(
   filePath: string,
   config: ConfigFile,
   format: ConfigFormat,
-  configKey: string
+  configKey: string,
 ): void {
   switch (format) {
-    case 'json':
+    case "json":
       writeJsonConfig(filePath, config, configKey);
       break;
-    case 'yaml':
+    case "yaml":
       writeYamlConfig(filePath, config);
       break;
-    case 'toml':
+    case "toml":
       writeTomlConfig(filePath, config);
       break;
     default:
@@ -48,7 +48,11 @@ export function writeConfig(
 /**
  * Build a config object with nested key
  */
-export function buildConfigWithKey(configKey: string, serverName: string, serverConfig: unknown): ConfigFile {
+export function buildConfigWithKey(
+  configKey: string,
+  serverName: string,
+  serverConfig: unknown,
+): ConfigFile {
   const config: ConfigFile = {};
   const servers: ConfigFile = {};
   servers[serverName] = serverConfig;

@@ -1,7 +1,7 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { dirname } from 'path';
-import * as TOML from '@iarna/toml';
-import type { ConfigFile } from '../types.js';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { dirname } from "path";
+import * as TOML from "@iarna/toml";
+import type { ConfigFile } from "../types.js";
 
 /**
  * Read a TOML config file
@@ -11,9 +11,9 @@ export function readTomlConfig(filePath: string): ConfigFile {
     return {};
   }
 
-  const content = readFileSync(filePath, 'utf-8');
+  const content = readFileSync(filePath, "utf-8");
   const parsed = TOML.parse(content);
-  
+
   return parsed as ConfigFile;
 }
 
@@ -50,10 +50,16 @@ function deepMerge(target: ConfigFile, source: ConfigFile): ConfigFile {
     const sourceValue = source[key];
     const targetValue = result[key];
 
-    if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+    if (
+      sourceValue &&
+      typeof sourceValue === "object" &&
+      !Array.isArray(sourceValue)
+    ) {
       result[key] = deepMerge(
-        (targetValue && typeof targetValue === 'object' ? targetValue : {}) as ConfigFile,
-        sourceValue as ConfigFile
+        (targetValue && typeof targetValue === "object"
+          ? targetValue
+          : {}) as ConfigFile,
+        sourceValue as ConfigFile,
       );
     } else {
       result[key] = sourceValue;

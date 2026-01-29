@@ -69,17 +69,19 @@ Options:
 ## Supported Agents
 
 <!-- AGENTS_TABLE_START -->
-| Agent | CLI Key | Format | Local Support |
-|-------|---------|--------|---------------|
-| Claude Code | `claude-code` | JSON | Yes |
-| Claude Desktop | `claude-desktop` | JSON | No |
-| Codex | `codex` | TOML | No |
-| Cursor | `cursor` | JSON | Yes |
-| Gemini CLI | `gemini-cli` | JSON | Yes |
-| Goose | `goose` | YAML | No |
-| OpenCode | `opencode` | JSON | Yes |
-| VS Code | `vscode` | JSON | Yes |
-| Zed | `zed` | JSON | No |
+
+| Agent          | CLI Key          | Format | Local Support |
+| -------------- | ---------------- | ------ | ------------- |
+| Claude Code    | `claude-code`    | JSON   | Yes           |
+| Claude Desktop | `claude-desktop` | JSON   | No            |
+| Codex          | `codex`          | TOML   | No            |
+| Cursor         | `cursor`         | JSON   | Yes           |
+| Gemini CLI     | `gemini-cli`     | JSON   | Yes           |
+| Goose          | `goose`          | YAML   | No            |
+| OpenCode       | `opencode`       | JSON   | Yes           |
+| VS Code        | `vscode`         | JSON   | Yes           |
+| Zed            | `zed`            | JSON   | No            |
+
 <!-- AGENTS_TABLE_END -->
 
 **Aliases:** `github-copilot` → `vscode`
@@ -118,15 +120,14 @@ npx add-mcp mcp-server --all
 
 ## Config File Locations
 
-| Agent | Global | Local |
-|-------|--------|-------|
-| Claude Code | `~/.claude.json` | `.mcp.json` |
-| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` | - |
-| Codex | `~/.codex/config.toml` | - |
-| Cursor | `~/.cursor/mcp.json` | `.cursor/mcp.json` |
-| Gemini CLI | `~/.gemini/settings.json` | `.gemini/settings.json` |
-| Goose | `~/.config/goose/config.yaml` | - |
-| OpenCode | `~/.config/opencode/opencode.json` | `.opencode.json` |
-| VS Code | `~/Library/Application Support/Code/User/mcp.json` | `.vscode/mcp.json` |
-| Zed | `~/.config/zed/settings.json` | - |
-
+| Agent          | Global                                                            | Local                   |
+| -------------- | ----------------------------------------------------------------- | ----------------------- |
+| Claude Code    | `~/.claude.json`                                                  | `.mcp.json`             |
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` | -                       |
+| Codex          | `~/.codex/config.toml`                                            | -                       |
+| Cursor         | `~/.cursor/mcp.json`                                              | `.cursor/mcp.json`      |
+| Gemini CLI     | `~/.gemini/settings.json`                                         | `.gemini/settings.json` |
+| Goose          | `~/.config/goose/config.yaml`                                     | -                       |
+| OpenCode       | `~/.config/opencode/opencode.json`                                | `.opencode.json`        |
+| VS Code        | `~/Library/Application Support/Code/User/mcp.json`                | `.vscode/mcp.json`      |
+| Zed            | `~/.config/zed/settings.json`                                     | -                       |

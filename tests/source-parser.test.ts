@@ -6,8 +6,12 @@
  * Run with: npx tsx tests/source-parser.test.ts
  */
 
-import assert from 'node:assert';
-import { parseSource, isRemoteSource, isLocalSource } from '../src/source-parser.js';
+import assert from "node:assert";
+import {
+  parseSource,
+  isRemoteSource,
+  isLocalSource,
+} from "../src/source-parser.js";
 
 let passed = 0;
 let failed = 0;
@@ -25,121 +29,124 @@ function test(name: string, fn: () => void) {
 }
 
 // Remote URL tests
-test('Remote URL - HTTPS', () => {
-  const result = parseSource('https://mcp.example.com/api');
-  assert.strictEqual(result.type, 'remote');
-  assert.strictEqual(result.value, 'https://mcp.example.com/api');
-  assert.strictEqual(result.inferredName, 'mcp-example-com');
+test("Remote URL - HTTPS", () => {
+  const result = parseSource("https://mcp.example.com/api");
+  assert.strictEqual(result.type, "remote");
+  assert.strictEqual(result.value, "https://mcp.example.com/api");
+  assert.strictEqual(result.inferredName, "mcp-example-com");
 });
 
-test('Remote URL - HTTP', () => {
-  const result = parseSource('http://localhost:3000/mcp');
-  assert.strictEqual(result.type, 'remote');
-  assert.strictEqual(result.value, 'http://localhost:3000/mcp');
-  assert.strictEqual(result.inferredName, 'localhost');
+test("Remote URL - HTTP", () => {
+  const result = parseSource("http://localhost:3000/mcp");
+  assert.strictEqual(result.type, "remote");
+  assert.strictEqual(result.value, "http://localhost:3000/mcp");
+  assert.strictEqual(result.inferredName, "localhost");
 });
 
-test('Remote URL - with path', () => {
-  const result = parseSource('https://api.company.com/mcp/v1');
-  assert.strictEqual(result.type, 'remote');
-  assert.strictEqual(result.inferredName, 'api-company-com');
+test("Remote URL - with path", () => {
+  const result = parseSource("https://api.company.com/mcp/v1");
+  assert.strictEqual(result.type, "remote");
+  assert.strictEqual(result.inferredName, "api-company-com");
 });
 
 // Package name tests
-test('Package name - simple', () => {
-  const result = parseSource('mcp-server-postgres');
-  assert.strictEqual(result.type, 'package');
-  assert.strictEqual(result.value, 'mcp-server-postgres');
-  assert.strictEqual(result.inferredName, 'postgres');
+test("Package name - simple", () => {
+  const result = parseSource("mcp-server-postgres");
+  assert.strictEqual(result.type, "package");
+  assert.strictEqual(result.value, "mcp-server-postgres");
+  assert.strictEqual(result.inferredName, "postgres");
 });
 
-test('Package name - scoped', () => {
-  const result = parseSource('@modelcontextprotocol/server-postgres');
-  assert.strictEqual(result.type, 'package');
-  assert.strictEqual(result.value, '@modelcontextprotocol/server-postgres');
-  assert.strictEqual(result.inferredName, 'postgres');
+test("Package name - scoped", () => {
+  const result = parseSource("@modelcontextprotocol/server-postgres");
+  assert.strictEqual(result.type, "package");
+  assert.strictEqual(result.value, "@modelcontextprotocol/server-postgres");
+  assert.strictEqual(result.inferredName, "postgres");
 });
 
-test('Package name - with version', () => {
-  const result = parseSource('mcp-server-github@1.0.0');
-  assert.strictEqual(result.type, 'package');
-  assert.strictEqual(result.value, 'mcp-server-github@1.0.0');
-  assert.strictEqual(result.inferredName, 'github');
+test("Package name - with version", () => {
+  const result = parseSource("mcp-server-github@1.0.0");
+  assert.strictEqual(result.type, "package");
+  assert.strictEqual(result.value, "mcp-server-github@1.0.0");
+  assert.strictEqual(result.inferredName, "github");
 });
 
-test('Package name - scoped with version', () => {
-  const result = parseSource('@org/mcp-server@2.0.0');
-  assert.strictEqual(result.type, 'package');
-  assert.strictEqual(result.value, '@org/mcp-server@2.0.0');
+test("Package name - scoped with version", () => {
+  const result = parseSource("@org/mcp-server@2.0.0");
+  assert.strictEqual(result.type, "package");
+  assert.strictEqual(result.value, "@org/mcp-server@2.0.0");
 });
 
 // Command tests
-test('Command - npx with package', () => {
-  const result = parseSource('npx -y @modelcontextprotocol/server-postgres');
-  assert.strictEqual(result.type, 'command');
-  assert.strictEqual(result.value, 'npx -y @modelcontextprotocol/server-postgres');
-  assert.strictEqual(result.inferredName, 'postgres');
+test("Command - npx with package", () => {
+  const result = parseSource("npx -y @modelcontextprotocol/server-postgres");
+  assert.strictEqual(result.type, "command");
+  assert.strictEqual(
+    result.value,
+    "npx -y @modelcontextprotocol/server-postgres",
+  );
+  assert.strictEqual(result.inferredName, "postgres");
 });
 
-test('Command - node with script', () => {
-  const result = parseSource('node /path/to/server.js --port 3000');
-  assert.strictEqual(result.type, 'command');
-  assert.strictEqual(result.value, 'node /path/to/server.js --port 3000');
+test("Command - node with script", () => {
+  const result = parseSource("node /path/to/server.js --port 3000");
+  assert.strictEqual(result.type, "command");
+  assert.strictEqual(result.value, "node /path/to/server.js --port 3000");
 });
 
-test('Command - python', () => {
-  const result = parseSource('python -m mcp_server');
-  assert.strictEqual(result.type, 'command');
-  assert.strictEqual(result.value, 'python -m mcp_server');
+test("Command - python", () => {
+  const result = parseSource("python -m mcp_server");
+  assert.strictEqual(result.type, "command");
+  assert.strictEqual(result.value, "python -m mcp_server");
 });
 
-test('Command - complex with args', () => {
-  const result = parseSource('npx -y mcp-server-github --token abc123');
-  assert.strictEqual(result.type, 'command');
-  assert.strictEqual(result.inferredName, 'github');
+test("Command - complex with args", () => {
+  const result = parseSource("npx -y mcp-server-github --token abc123");
+  assert.strictEqual(result.type, "command");
+  assert.strictEqual(result.inferredName, "github");
 });
 
 // Helper function tests
-test('isRemoteSource - remote URL returns true', () => {
-  const parsed = parseSource('https://example.com/mcp');
+test("isRemoteSource - remote URL returns true", () => {
+  const parsed = parseSource("https://example.com/mcp");
   assert.strictEqual(isRemoteSource(parsed), true);
 });
 
-test('isRemoteSource - package returns false', () => {
-  const parsed = parseSource('mcp-server');
+test("isRemoteSource - package returns false", () => {
+  const parsed = parseSource("mcp-server");
   assert.strictEqual(isRemoteSource(parsed), false);
 });
 
-test('isLocalSource - package returns true', () => {
-  const parsed = parseSource('mcp-server');
+test("isLocalSource - package returns true", () => {
+  const parsed = parseSource("mcp-server");
   assert.strictEqual(isLocalSource(parsed), true);
 });
 
-test('isLocalSource - command returns true', () => {
-  const parsed = parseSource('npx mcp-server');
+test("isLocalSource - command returns true", () => {
+  const parsed = parseSource("npx mcp-server");
   assert.strictEqual(isLocalSource(parsed), true);
 });
 
-test('isLocalSource - remote URL returns false', () => {
-  const parsed = parseSource('https://example.com/mcp');
+test("isLocalSource - remote URL returns false", () => {
+  const parsed = parseSource("https://example.com/mcp");
   assert.strictEqual(isLocalSource(parsed), false);
 });
 
 // Edge cases
-test('Whitespace trimming', () => {
-  const result = parseSource('  https://example.com/mcp  ');
-  assert.strictEqual(result.type, 'remote');
-  assert.strictEqual(result.value, 'https://example.com/mcp');
+test("Whitespace trimming", () => {
+  const result = parseSource("  https://example.com/mcp  ");
+  assert.strictEqual(result.type, "remote");
+  assert.strictEqual(result.value, "https://example.com/mcp");
 });
 
-test('Name inference - server- prefix removed', () => {
-  const result = parseSource('server-filesystem');
-  assert.strictEqual(result.inferredName, 'filesystem');
+test("Name inference - server- prefix removed", () => {
+  const result = parseSource("server-filesystem");
+  assert.strictEqual(result.inferredName, "filesystem");
 });
 
-test('Name inference - -mcp suffix removed', () => {
-  const result = parseSource('github-mcp');
-  assert.strictEqual(result.inferredName, 'github');
+test("Name inference - -mcp suffix removed", () => {
+  const result = parseSource("github-mcp");
+  assert.strictEqual(result.inferredName, "github");
 });
 
 // Summary
