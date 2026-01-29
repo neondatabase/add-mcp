@@ -22,6 +22,66 @@ import packageJson from "../package.json" with { type: "json" };
 
 const version = packageJson.version;
 
+// ANSI color codes
+const RESET = "\x1b[0m";
+const DIM = "\x1b[38;5;102m";
+const TEXT = "\x1b[38;5;145m";
+
+// ASCII art logo for ADD-MCP
+const LOGO_LINES = [
+  "█████╗ ██████╗ ██████╗       ███╗   ███╗ ██████╗██████╗ ",
+  "██╔══██╗██╔══██╗██╔══██╗      ████╗ ████║██╔════╝██╔══██╗",
+  "███████║██║  ██║██║  ██║█████╗██╔████╔██║██║     ██████╔╝",
+  "██╔══██║██║  ██║██║  ██║╚════╝██║╚██╔╝██║██║     ██╔═══╝ ",
+  "██║  ██║██████╔╝██████╔╝      ██║ ╚═╝ ██║╚██████╗██║     ",
+  "╚═╝  ╚═╝╚═════╝ ╚═════╝       ╚═╝     ╚═╝ ╚═════╝╚═╝     ",
+];
+
+// Gradient grays for logo
+const GRAYS = [
+  "\x1b[38;5;250m",
+  "\x1b[38;5;248m",
+  "\x1b[38;5;245m",
+  "\x1b[38;5;243m",
+  "\x1b[38;5;240m",
+  "\x1b[38;5;238m",
+];
+
+function showLogo(): void {
+  console.log();
+  LOGO_LINES.forEach((line, i) => {
+    console.log(`${GRAYS[i]}${line}${RESET}`);
+  });
+}
+
+function showBanner(): void {
+  showLogo();
+  console.log();
+  console.log(`${DIM}Add MCP servers to your favorite coding agents${RESET}`);
+  console.log();
+  console.log(
+    `  ${DIM}$${RESET} ${TEXT}npx add-mcp ${DIM}<url>${RESET}              ${DIM}Install remote MCP server${RESET}`,
+  );
+  console.log(
+    `  ${DIM}$${RESET} ${TEXT}npx add-mcp ${DIM}<package>${RESET}          ${DIM}Install npm package${RESET}`,
+  );
+  console.log(
+    `  ${DIM}$${RESET} ${TEXT}npx add-mcp ${DIM}<url> ${TEXT}-g${RESET}            ${DIM}Install globally${RESET}`,
+  );
+  console.log(
+    `  ${DIM}$${RESET} ${TEXT}npx add-mcp ${DIM}<url> ${TEXT}-a cursor${RESET}    ${DIM}Install to specific agent${RESET}`,
+  );
+  console.log();
+  console.log(
+    `${DIM}Supports:${RESET} Claude Code, Cursor, VS Code, OpenCode, and more`,
+  );
+  console.log();
+  console.log(
+    `${DIM}Learn more at${RESET} ${TEXT}https://github.com/neondatabase/add-mcp${RESET}`,
+  );
+  console.log();
+}
+
 /**
  * Shorten a path for display (replace home with ~)
  */
@@ -102,29 +162,39 @@ async function main(target: string | undefined, options: Options) {
   // --all just selects all agents, doesn't imply --yes or --global
   // Use --yes to skip prompts, --global to install globally
 
-  console.log();
-  p.intro(chalk.bgCyan.black(" add-mcp "));
+  // Always show the logo
+  showLogo();
 
-  // Require target
+  // Show full banner (with help) when no target is provided
   if (!target) {
-    p.log.error("Missing required argument: target");
     console.log();
-    p.log.info(chalk.dim("Usage:"));
-    p.log.message(
-      `  ${chalk.cyan("npx add-mcp")} ${chalk.yellow("<target>")} ${chalk.dim("[options]")}`,
+    console.log(`${DIM}Add MCP servers to your favorite coding agents${RESET}`);
+    console.log();
+    console.log(
+      `  ${DIM}$${RESET} ${TEXT}npx add-mcp ${DIM}<url>${RESET}              ${DIM}Install remote MCP server${RESET}`,
+    );
+    console.log(
+      `  ${DIM}$${RESET} ${TEXT}npx add-mcp ${DIM}<package>${RESET}          ${DIM}Install npm package${RESET}`,
+    );
+    console.log(
+      `  ${DIM}$${RESET} ${TEXT}npx add-mcp ${DIM}<url> ${TEXT}-g${RESET}            ${DIM}Install globally${RESET}`,
+    );
+    console.log(
+      `  ${DIM}$${RESET} ${TEXT}npx add-mcp ${DIM}<url> ${TEXT}-a cursor${RESET}    ${DIM}Install to specific agent${RESET}`,
     );
     console.log();
-    p.log.info(chalk.dim("Examples:"));
-    p.log.message(
-      `  ${chalk.cyan("npx add-mcp")} ${chalk.yellow("https://mcp.example.com/api")}`,
-    );
-    p.log.message(
-      `  ${chalk.cyan("npx add-mcp")} ${chalk.yellow("@modelcontextprotocol/server-postgres")}`,
+    console.log(
+      `${DIM}Supports:${RESET} Claude Code, Cursor, VS Code, OpenCode, and more`,
     );
     console.log();
-    p.outro(chalk.dim("Run --help for more information"));
-    process.exit(1);
+    console.log(
+      `${DIM}Learn more at${RESET} ${TEXT}https://github.com/neondatabase/add-mcp${RESET}`,
+    );
+    console.log();
+    process.exit(0);
   }
+
+  console.log();
 
   const spinner = p.spinner();
 

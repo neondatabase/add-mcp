@@ -1,7 +1,7 @@
 {
   "name": "add-mcp",
-  "version": "0.2.0",
-  "description": "Install MCP servers onto coding agents (Claude Code, Cursor, VS Code, OpenCode, Codex)",
+  "version": "0.3.1",
+  "description": "Add MCP servers to your favorite coding agents with a single command.",
   "author": "Andre Landgraf <andre@neon.tech>",
   "license": "Apache-2.0",
   "type": "module",
