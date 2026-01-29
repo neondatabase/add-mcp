@@ -77,12 +77,12 @@ The CLI automatically detects agents based on your environment:
 **Default (project mode):**
 
 - Detects project-level config files (`.cursor/`, `.vscode/`, `.mcp.json`, etc.)
-- Also detects globally-installed agents that only support global config (Claude Desktop, Codex, Zed)
-- Agents are routed appropriately: project-capable agents use project config, global-only agents use global config
+- Only shows agents that have project config in the current directory
+- Installs to project-level config files
 
 **With `-g` (global mode):**
 
-- Detects all globally-installed agents
+- Detects all globally-installed agents (including Claude Desktop, Codex, Zed)
 - All agents use global config
 
 **No agents detected:**

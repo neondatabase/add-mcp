@@ -11,7 +11,6 @@ import {
   getAgentTypes,
   isTransportSupported,
   detectProjectAgents,
-  detectGlobalOnlyAgents,
   detectAllGlobalAgents,
   supportsProjectConfig,
   getProjectCapableAgents,
@@ -203,18 +202,17 @@ async function main(target: string | undefined, options: Options) {
     if (options.global) {
       // Global mode: detect all globally installed agents
       detectedAgents = await detectAllGlobalAgents();
+      for (const agent of detectedAgents) {
+        agentRouting.set(agent, "global");
+      }
     } else {
-      // Default (project) mode: detect project agents + global-only agents
+      // Default (project) mode: only detect project agents
       const projectAgents = detectProjectAgents();
-      const globalOnlyAgents = await detectGlobalOnlyAgents();
-      detectedAgents = [...projectAgents, ...globalOnlyAgents];
+      detectedAgents = projectAgents;
 
       // Set routing for detected agents
       for (const agent of projectAgents) {
         agentRouting.set(agent, "local");
-      }
-      for (const agent of globalOnlyAgents) {
-        agentRouting.set(agent, "global");
       }
     }
 
