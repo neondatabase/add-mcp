@@ -1,12 +1,8 @@
 # add-mcp
 
-Install MCP servers onto coding agents with a single command.
-
-<!-- agent-list:start -->
+Add MCP servers to your favorite coding agents with a single command.
 
 Supports **OpenCode**, **Claude Code**, **Codex**, **Cursor**, and [5 more](#supported-agents).
-
-<!-- agent-list:end -->
 
 ## Install an MCP Server
 
@@ -74,6 +70,26 @@ npx add-mcp mcp-server-github --all -g -y
 | **Project** | (default) | `.cursor/mcp.json` etc. | Committed with your project, shared with team |
 | **Global**  | `-g`      | `~/.cursor/mcp.json`    | Available across all projects                 |
 
+### Smart Detection
+
+The CLI automatically detects agents based on your environment:
+
+**Default (project mode):**
+
+- Detects project-level config files (`.cursor/`, `.vscode/`, `.mcp.json`, etc.)
+- Also detects globally-installed agents that only support global config (Claude Desktop, Codex, Zed)
+- Agents are routed appropriately: project-capable agents use project config, global-only agents use global config
+
+**With `-g` (global mode):**
+
+- Detects all globally-installed agents
+- All agents use global config
+
+**No agents detected:**
+
+- Interactive mode: Shows error with guidance to use `--global` or run in a project
+- With `--yes`: Installs to all project-capable agents
+
 ## Transport Types
 
 MCP supports different transport mechanisms for remote servers:
@@ -89,8 +105,6 @@ Local servers (npm packages, commands) always use **stdio** transport.
 
 MCP servers can be installed to any of these agents:
 
-<!-- supported-agents:start -->
-
 | Agent          | `--agent`        | Project Path            | Global Path                                                       |
 | -------------- | ---------------- | ----------------------- | ----------------------------------------------------------------- |
 | Claude Code    | `claude-code`    | `.mcp.json`             | `~/.claude.json`                                                  |
@@ -98,16 +112,14 @@ MCP servers can be installed to any of these agents:
 | Codex          | `codex`          | -                       | `~/.codex/config.toml`                                            |
 | Cursor         | `cursor`         | `.cursor/mcp.json`      | `~/.cursor/mcp.json`                                              |
 | Gemini CLI     | `gemini-cli`     | `.gemini/settings.json` | `~/.gemini/settings.json`                                         |
-| Goose          | `goose`          | -                       | `~/.config/goose/config.yaml`                                     |
+| Goose          | `goose`          | `.goose/config.yaml`    | `~/.config/goose/config.yaml`                                     |
 | OpenCode       | `opencode`       | `.opencode.json`        | `~/.config/opencode/opencode.json`                                |
 | VS Code        | `vscode`         | `.vscode/mcp.json`      | `~/Library/Application Support/Code/User/mcp.json`                |
 | Zed            | `zed`            | -                       | `~/.config/zed/settings.json`                                     |
 
-<!-- supported-agents:end -->
-
 **Aliases:** `github-copilot` → `vscode`
 
-The CLI automatically detects which coding agents you have installed. If none are detected, you'll be prompted to select which agents to install to.
+The CLI uses smart detection to find agents in your project directory and globally installed agents. See [Smart Detection](#smart-detection) for details.
 
 ### Transport Support
 

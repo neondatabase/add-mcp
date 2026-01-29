@@ -36,14 +36,16 @@ export interface AgentConfig {
   configPath: string;
   /** Local (project-level) config file path, if supported */
   localConfigPath?: string;
+  /** Paths to check for project-level detection (relative to cwd) */
+  projectDetectPaths: string[];
   /** Key in config file where MCP servers are stored (supports dot notation) */
   configKey: string;
   /** Config file format */
   format: ConfigFormat;
   /** Supported transport types for this agent */
   supportedTransports: ("stdio" | "sse" | "http")[];
-  /** Function to detect if agent is installed */
-  detectInstalled: () => Promise<boolean>;
+  /** Function to detect if agent is installed globally */
+  detectGlobalInstall: () => Promise<boolean>;
   /** Optional function to transform server config to agent-specific format */
   transformConfig?: (serverName: string, config: McpServerConfig) => unknown;
 }

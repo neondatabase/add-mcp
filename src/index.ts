@@ -8,16 +8,16 @@ import type { AgentType, TransportType } from "./types.js";
 import { agentAliases } from "./types.js";
 import {
   agents,
-  detectInstalledAgents,
   getAgentTypes,
   isTransportSupported,
+  detectProjectAgents,
+  detectGlobalOnlyAgents,
+  detectAllGlobalAgents,
+  supportsProjectConfig,
+  getProjectCapableAgents,
 } from "./agents.js";
 import { parseSource, isRemoteSource } from "./source-parser.js";
-import {
-  buildServerConfig,
-  installServer,
-  getAgentsWithLocalSupport,
-} from "./installer.js";
+import { buildServerConfig, installServer } from "./installer.js";
 
 import packageJson from "../package.json" with { type: "json" };
 
@@ -166,6 +166,10 @@ async function main(target: string | undefined, options: Options) {
   let targetAgents: AgentType[];
   const allAgentTypes = getAgentTypes();
 
+  // Track which agents should use local vs global config
+  // This will be populated based on detection and user choices
+  let agentRouting: Map<AgentType, "local" | "global"> = new Map();
+
   if (options.agent && options.agent.length > 0) {
     // Resolve specified agents (handling aliases)
     const resolved: AgentType[] = [];
@@ -191,18 +195,52 @@ async function main(target: string | undefined, options: Options) {
     targetAgents = allAgentTypes;
     p.log.info(`Installing to all ${targetAgents.length} agents`);
   } else {
-    // Auto-detect installed agents
-    spinner.start("Detecting installed agents...");
-    const installedAgents = await detectInstalledAgents();
+    // Smart detection based on scope
+    spinner.start("Detecting agents...");
+
+    let detectedAgents: AgentType[];
+
+    if (options.global) {
+      // Global mode: detect all globally installed agents
+      detectedAgents = await detectAllGlobalAgents();
+    } else {
+      // Default (project) mode: detect project agents + global-only agents
+      const projectAgents = detectProjectAgents();
+      const globalOnlyAgents = await detectGlobalOnlyAgents();
+      detectedAgents = [...projectAgents, ...globalOnlyAgents];
+
+      // Set routing for detected agents
+      for (const agent of projectAgents) {
+        agentRouting.set(agent, "local");
+      }
+      for (const agent of globalOnlyAgents) {
+        agentRouting.set(agent, "global");
+      }
+    }
+
     spinner.stop(
-      `Detected ${installedAgents.length} agent${installedAgents.length !== 1 ? "s" : ""}`,
+      `Detected ${detectedAgents.length} agent${detectedAgents.length !== 1 ? "s" : ""}`,
     );
 
-    if (installedAgents.length === 0) {
+    if (detectedAgents.length === 0) {
       if (options.yes) {
-        targetAgents = allAgentTypes;
-        p.log.info("Installing to all agents (none detected)");
+        // No agents detected + --yes: install to all project-capable agents
+        targetAgents = getProjectCapableAgents();
+        for (const agent of targetAgents) {
+          agentRouting.set(agent, "local");
+        }
+        p.log.info(
+          `Installing to ${targetAgents.length} project-capable agents (none detected)`,
+        );
       } else {
+        // Interactive mode: error if no agents detected in project
+        if (!options.global) {
+          p.log.error(
+            "No agents detected in this project. Use --global to install globally, or run in a project with agent config files.",
+          );
+          process.exit(1);
+        }
+
         p.log.warn(
           "No coding agents detected. You can still install MCP servers.",
         );
@@ -225,24 +263,33 @@ async function main(target: string | undefined, options: Options) {
 
         targetAgents = selected as AgentType[];
       }
-    } else if (installedAgents.length === 1 || options.yes) {
-      targetAgents = installedAgents;
-      const agentNames = installedAgents
+    } else if (detectedAgents.length === 1 || options.yes) {
+      targetAgents = detectedAgents;
+      const agentNames = detectedAgents
         .map((a) => chalk.cyan(agents[a].displayName))
         .join(", ");
       p.log.info(`Installing to: ${agentNames}`);
     } else {
-      const agentChoices = installedAgents.map((a) => ({
-        value: a,
-        label: agents[a].displayName,
-        hint: shortenPath(agents[a].configPath),
-      }));
+      const agentChoices = detectedAgents.map((a) => {
+        const routing = agentRouting.get(a);
+        const hint =
+          routing === "local"
+            ? "project"
+            : routing === "global"
+              ? "global"
+              : shortenPath(agents[a].configPath);
+        return {
+          value: a,
+          label: agents[a].displayName,
+          hint,
+        };
+      });
 
       const selected = await p.multiselect({
         message: "Select agents to install to",
         options: agentChoices,
         required: true,
-        initialValues: installedAgents,
+        initialValues: detectedAgents,
       });
 
       if (p.isCancel(selected)) {
@@ -291,41 +338,67 @@ async function main(target: string | undefined, options: Options) {
   }
 
   // Determine installation scope (global vs local)
-  let installGlobally = options.global ?? false;
+  // If we already have routing from smart detection, use that
+  // Otherwise, determine scope and build routing
 
-  if (options.global === undefined && !options.yes) {
+  const hasSmartRouting = agentRouting.size > 0;
+
+  if (options.global) {
+    // Explicit global flag - route all agents to global
+    for (const agent of targetAgents) {
+      agentRouting.set(agent, "global");
+    }
+  } else if (!hasSmartRouting) {
+    // No smart routing yet - need to determine scope
+    // This happens when user specifies --agent or --all without --global
+
     // Check if any selected agents support local config
-    const localSupported = getAgentsWithLocalSupport();
     const selectedWithLocal = targetAgents.filter((a) =>
-      localSupported.includes(a),
+      supportsProjectConfig(a),
+    );
+    const globalOnlySelected = targetAgents.filter(
+      (a) => !supportsProjectConfig(a),
     );
 
-    if (selectedWithLocal.length > 0) {
-      const scope = await p.select({
-        message: "Installation scope",
-        options: [
-          {
-            value: false,
-            label: "Project",
-            hint: "Install in current directory (committed with your project)",
-          },
-          {
-            value: true,
-            label: "Global",
-            hint: "Install in home directory (available across all projects)",
-          },
-        ],
-      });
+    // Global-only agents always go to global
+    for (const agent of globalOnlySelected) {
+      agentRouting.set(agent, "global");
+    }
 
-      if (p.isCancel(scope)) {
-        p.cancel("Installation cancelled");
-        process.exit(0);
+    if (selectedWithLocal.length > 0) {
+      let installLocally = true; // Default to local/project
+
+      if (!options.yes) {
+        const scope = await p.select({
+          message: "Installation scope",
+          options: [
+            {
+              value: true,
+              label: "Project",
+              hint: "Install in current directory (committed with your project)",
+            },
+            {
+              value: false,
+              label: "Global",
+              hint: "Install in home directory (available across all projects)",
+            },
+          ],
+        });
+
+        if (p.isCancel(scope)) {
+          p.cancel("Installation cancelled");
+          process.exit(0);
+        }
+
+        installLocally = scope as boolean;
       }
 
-      installGlobally = scope as boolean;
+      // Route project-capable agents based on user choice
+      for (const agent of selectedWithLocal) {
+        agentRouting.set(agent, installLocally ? "local" : "global");
+      }
     } else {
       // All selected agents only support global config
-      installGlobally = true;
       p.log.info("Selected agents only support global installation");
     }
   }
@@ -334,12 +407,35 @@ async function main(target: string | undefined, options: Options) {
   const summaryLines: string[] = [];
   summaryLines.push(`${chalk.cyan("Server:")} ${serverName}`);
   summaryLines.push(`${chalk.cyan("Type:")} ${sourceType}`);
-  summaryLines.push(
-    `${chalk.cyan("Scope:")} ${installGlobally ? "Global" : "Project"}`,
+
+  // Determine scope display
+  const localAgents = targetAgents.filter(
+    (a) => agentRouting.get(a) === "local",
   );
-  summaryLines.push(
-    `${chalk.cyan("Agents:")} ${targetAgents.map((a) => agents[a].displayName).join(", ")}`,
+  const globalAgents = targetAgents.filter(
+    (a) => agentRouting.get(a) === "global",
   );
+
+  if (localAgents.length > 0 && globalAgents.length > 0) {
+    // Mixed routing
+    summaryLines.push(`${chalk.cyan("Scope:")} Mixed (project + global)`);
+    summaryLines.push(
+      `${chalk.cyan("  Project:")} ${localAgents.map((a) => agents[a].displayName).join(", ")}`,
+    );
+    summaryLines.push(
+      `${chalk.cyan("  Global:")} ${globalAgents.map((a) => agents[a].displayName).join(", ")}`,
+    );
+  } else if (localAgents.length > 0) {
+    summaryLines.push(`${chalk.cyan("Scope:")} Project`);
+    summaryLines.push(
+      `${chalk.cyan("Agents:")} ${localAgents.map((a) => agents[a].displayName).join(", ")}`,
+    );
+  } else {
+    summaryLines.push(`${chalk.cyan("Scope:")} Global`);
+    summaryLines.push(
+      `${chalk.cyan("Agents:")} ${globalAgents.map((a) => agents[a].displayName).join(", ")}`,
+    );
+  }
 
   console.log();
   p.note(summaryLines.join("\n"), "Installation Summary");
@@ -360,7 +456,7 @@ async function main(target: string | undefined, options: Options) {
   spinner.start("Installing MCP server...");
 
   const results = installServer(serverName, serverConfig, targetAgents, {
-    local: !installGlobally,
+    routing: agentRouting,
   });
 
   spinner.stop("Installation complete");

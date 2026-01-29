@@ -22,6 +22,13 @@ export interface InstallOptions {
   cwd?: string;
 }
 
+export interface InstallServerOptions {
+  /** Per-agent routing map (local vs global) */
+  routing?: Map<AgentType, "local" | "global">;
+  /** Current working directory for local installs */
+  cwd?: string;
+}
+
 export interface InstallResult {
   success: boolean;
   path: string;
@@ -165,22 +172,29 @@ export function installServerForAgent(
 }
 
 /**
- * Install an MCP server to multiple agents
+ * Install an MCP server to multiple agents with per-agent routing
  */
 export function installServer(
   serverName: string,
   serverConfig: McpServerConfig,
   agentTypes: AgentType[],
-  options: InstallOptions = {},
+  options: InstallServerOptions = {},
 ): Map<AgentType, InstallResult> {
   const results = new Map<AgentType, InstallResult>();
 
   for (const agentType of agentTypes) {
+    // Determine if this agent should use local or global config
+    const routing = options.routing?.get(agentType);
+    const installOptions: InstallOptions = {
+      local: routing === "local",
+      cwd: options.cwd,
+    };
+
     const result = installServerForAgent(
       serverName,
       serverConfig,
       agentType,
-      options,
+      installOptions,
     );
     results.set(agentType, result);
   }

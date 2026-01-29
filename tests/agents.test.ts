@@ -1,0 +1,355 @@
+#!/usr/bin/env tsx
+
+/**
+ * Unit tests for agents.ts - detection and routing functions
+ *
+ * Run with: npx tsx tests/agents.test.ts
+ */
+
+import assert from "node:assert";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  agents,
+  getAgentTypes,
+  supportsProjectConfig,
+  getProjectCapableAgents,
+  getGlobalOnlyAgents,
+  detectProjectAgents,
+  isTransportSupported,
+} from "../src/agents.js";
+import type { AgentType } from "../src/types.js";
+
+let passed = 0;
+let failed = 0;
+let tempDirs: string[] = [];
+
+function test(name: string, fn: () => void) {
+  try {
+    fn();
+    console.log(`\u2713 ${name}`);
+    passed++;
+  } catch (err) {
+    console.log(`\u2717 ${name}`);
+    console.error(`  ${(err as Error).message}`);
+    failed++;
+  }
+}
+
+function createTempDir(): string {
+  const dir = mkdtempSync(join(tmpdir(), "add-mcp-agents-test-"));
+  tempDirs.push(dir);
+  return dir;
+}
+
+function cleanup() {
+  for (const dir of tempDirs) {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
+  tempDirs = [];
+}
+
+// ============================================
+// Agent Configuration Tests
+// ============================================
+
+test("getAgentTypes returns all 9 agents", () => {
+  const types = getAgentTypes();
+  assert.strictEqual(types.length, 9);
+  assert.ok(types.includes("claude-code"));
+  assert.ok(types.includes("claude-desktop"));
+  assert.ok(types.includes("codex"));
+  assert.ok(types.includes("cursor"));
+  assert.ok(types.includes("gemini-cli"));
+  assert.ok(types.includes("goose"));
+  assert.ok(types.includes("opencode"));
+  assert.ok(types.includes("vscode"));
+  assert.ok(types.includes("zed"));
+});
+
+test("All agents have required properties", () => {
+  for (const [type, config] of Object.entries(agents)) {
+    assert.ok(config.name, `${type} missing name`);
+    assert.ok(config.displayName, `${type} missing displayName`);
+    assert.ok(config.configPath, `${type} missing configPath`);
+    assert.ok(config.configKey, `${type} missing configKey`);
+    assert.ok(config.format, `${type} missing format`);
+    assert.ok(
+      Array.isArray(config.supportedTransports),
+      `${type} missing supportedTransports`,
+    );
+    assert.ok(
+      Array.isArray(config.projectDetectPaths),
+      `${type} missing projectDetectPaths`,
+    );
+    assert.ok(
+      typeof config.detectGlobalInstall === "function",
+      `${type} missing detectGlobalInstall`,
+    );
+  }
+});
+
+// ============================================
+// Project Support Tests
+// ============================================
+
+test("supportsProjectConfig - returns true for project-capable agents", () => {
+  assert.strictEqual(supportsProjectConfig("claude-code"), true);
+  assert.strictEqual(supportsProjectConfig("cursor"), true);
+  assert.strictEqual(supportsProjectConfig("vscode"), true);
+  assert.strictEqual(supportsProjectConfig("opencode"), true);
+  assert.strictEqual(supportsProjectConfig("gemini-cli"), true);
+  assert.strictEqual(supportsProjectConfig("goose"), true);
+});
+
+test("supportsProjectConfig - returns false for global-only agents", () => {
+  assert.strictEqual(supportsProjectConfig("claude-desktop"), false);
+  assert.strictEqual(supportsProjectConfig("codex"), false);
+  assert.strictEqual(supportsProjectConfig("zed"), false);
+});
+
+test("getProjectCapableAgents returns 6 agents", () => {
+  const projectAgents = getProjectCapableAgents();
+  assert.strictEqual(projectAgents.length, 6);
+  assert.ok(projectAgents.includes("claude-code"));
+  assert.ok(projectAgents.includes("cursor"));
+  assert.ok(projectAgents.includes("vscode"));
+  assert.ok(projectAgents.includes("opencode"));
+  assert.ok(projectAgents.includes("gemini-cli"));
+  assert.ok(projectAgents.includes("goose"));
+});
+
+test("getGlobalOnlyAgents returns 3 agents", () => {
+  const globalAgents = getGlobalOnlyAgents();
+  assert.strictEqual(globalAgents.length, 3);
+  assert.ok(globalAgents.includes("claude-desktop"));
+  assert.ok(globalAgents.includes("codex"));
+  assert.ok(globalAgents.includes("zed"));
+});
+
+test("Project + global-only agents equals all agents", () => {
+  const projectAgents = getProjectCapableAgents();
+  const globalAgents = getGlobalOnlyAgents();
+  const allAgents = getAgentTypes();
+
+  const combined = [...projectAgents, ...globalAgents].sort();
+  const all = [...allAgents].sort();
+
+  assert.deepStrictEqual(combined, all);
+});
+
+// ============================================
+// Project Detection Tests
+// ============================================
+
+test("detectProjectAgents - empty directory returns empty array", () => {
+  const tempDir = createTempDir();
+  const detected = detectProjectAgents(tempDir);
+  assert.deepStrictEqual(detected, []);
+});
+
+test("detectProjectAgents - detects .cursor directory", () => {
+  const tempDir = createTempDir();
+  mkdirSync(join(tempDir, ".cursor"));
+
+  const detected = detectProjectAgents(tempDir);
+  assert.ok(detected.includes("cursor"));
+});
+
+test("detectProjectAgents - detects .vscode directory", () => {
+  const tempDir = createTempDir();
+  mkdirSync(join(tempDir, ".vscode"));
+
+  const detected = detectProjectAgents(tempDir);
+  assert.ok(detected.includes("vscode"));
+});
+
+test("detectProjectAgents - detects .mcp.json file (claude-code)", () => {
+  const tempDir = createTempDir();
+  writeFileSync(join(tempDir, ".mcp.json"), "{}");
+
+  const detected = detectProjectAgents(tempDir);
+  assert.ok(detected.includes("claude-code"));
+});
+
+test("detectProjectAgents - detects .claude directory (claude-code)", () => {
+  const tempDir = createTempDir();
+  mkdirSync(join(tempDir, ".claude"));
+
+  const detected = detectProjectAgents(tempDir);
+  assert.ok(detected.includes("claude-code"));
+});
+
+test("detectProjectAgents - detects .opencode.json file", () => {
+  const tempDir = createTempDir();
+  writeFileSync(join(tempDir, ".opencode.json"), "{}");
+
+  const detected = detectProjectAgents(tempDir);
+  assert.ok(detected.includes("opencode"));
+});
+
+test("detectProjectAgents - detects .opencode directory", () => {
+  const tempDir = createTempDir();
+  mkdirSync(join(tempDir, ".opencode"));
+
+  const detected = detectProjectAgents(tempDir);
+  assert.ok(detected.includes("opencode"));
+});
+
+test("detectProjectAgents - detects .gemini directory", () => {
+  const tempDir = createTempDir();
+  mkdirSync(join(tempDir, ".gemini"));
+
+  const detected = detectProjectAgents(tempDir);
+  assert.ok(detected.includes("gemini-cli"));
+});
+
+test("detectProjectAgents - detects .goose directory", () => {
+  const tempDir = createTempDir();
+  mkdirSync(join(tempDir, ".goose"));
+
+  const detected = detectProjectAgents(tempDir);
+  assert.ok(detected.includes("goose"));
+});
+
+test("detectProjectAgents - detects multiple agents", () => {
+  const tempDir = createTempDir();
+  mkdirSync(join(tempDir, ".cursor"));
+  mkdirSync(join(tempDir, ".vscode"));
+  writeFileSync(join(tempDir, ".mcp.json"), "{}");
+
+  const detected = detectProjectAgents(tempDir);
+  assert.strictEqual(detected.length, 3);
+  assert.ok(detected.includes("cursor"));
+  assert.ok(detected.includes("vscode"));
+  assert.ok(detected.includes("claude-code"));
+});
+
+test("detectProjectAgents - does not detect global-only agents", () => {
+  const tempDir = createTempDir();
+  // Even if we create directories that might look like agent configs,
+  // global-only agents should never be detected via project detection
+  mkdirSync(join(tempDir, ".cursor"));
+
+  const detected = detectProjectAgents(tempDir);
+  assert.ok(!detected.includes("claude-desktop"));
+  assert.ok(!detected.includes("codex"));
+  assert.ok(!detected.includes("zed"));
+});
+
+// ============================================
+// Transport Support Tests
+// ============================================
+
+test("isTransportSupported - all agents support stdio", () => {
+  for (const type of getAgentTypes()) {
+    assert.strictEqual(
+      isTransportSupported(type, "stdio"),
+      true,
+      `${type} should support stdio`,
+    );
+  }
+});
+
+test("isTransportSupported - most agents support http", () => {
+  const httpAgents: AgentType[] = [
+    "claude-code",
+    "claude-desktop",
+    "codex",
+    "cursor",
+    "gemini-cli",
+    "goose",
+    "opencode",
+    "vscode",
+    "zed",
+  ];
+
+  for (const type of httpAgents) {
+    assert.strictEqual(
+      isTransportSupported(type, "http"),
+      true,
+      `${type} should support http`,
+    );
+  }
+});
+
+test("isTransportSupported - goose does not support sse", () => {
+  assert.strictEqual(isTransportSupported("goose", "sse"), false);
+});
+
+test("isTransportSupported - other agents support sse", () => {
+  const sseAgents: AgentType[] = [
+    "claude-code",
+    "claude-desktop",
+    "codex",
+    "cursor",
+    "gemini-cli",
+    "opencode",
+    "vscode",
+    "zed",
+  ];
+
+  for (const type of sseAgents) {
+    assert.strictEqual(
+      isTransportSupported(type, "sse"),
+      true,
+      `${type} should support sse`,
+    );
+  }
+});
+
+// ============================================
+// Agent Config Path Tests
+// ============================================
+
+test("Project-capable agents have localConfigPath", () => {
+  const projectAgents = getProjectCapableAgents();
+  for (const type of projectAgents) {
+    assert.ok(
+      agents[type].localConfigPath,
+      `${type} should have localConfigPath`,
+    );
+  }
+});
+
+test("Global-only agents do not have localConfigPath", () => {
+  const globalAgents = getGlobalOnlyAgents();
+  for (const type of globalAgents) {
+    assert.strictEqual(
+      agents[type].localConfigPath,
+      undefined,
+      `${type} should not have localConfigPath`,
+    );
+  }
+});
+
+test("Project-capable agents have non-empty projectDetectPaths", () => {
+  const projectAgents = getProjectCapableAgents();
+  for (const type of projectAgents) {
+    assert.ok(
+      agents[type].projectDetectPaths.length > 0,
+      `${type} should have projectDetectPaths`,
+    );
+  }
+});
+
+test("Global-only agents have empty projectDetectPaths", () => {
+  const globalAgents = getGlobalOnlyAgents();
+  for (const type of globalAgents) {
+    assert.strictEqual(
+      agents[type].projectDetectPaths.length,
+      0,
+      `${type} should have empty projectDetectPaths`,
+    );
+  }
+});
+
+// Cleanup and summary
+cleanup();
+console.log(`\n${passed} passed, ${failed} failed`);
+process.exit(failed > 0 ? 1 : 0);

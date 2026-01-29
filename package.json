@@ -16,8 +16,8 @@
     "fmt": "prettier --write .",
     "build": "tsup src/index.ts --format esm --dts --clean",
     "dev": "tsx src/index.ts",
-    "test": "tsx tests/source-parser.test.ts && tsx tests/installer.test.ts && tsx tests/e2e/install.test.ts",
-    "test:unit": "tsx tests/source-parser.test.ts && tsx tests/installer.test.ts",
+    "test": "tsx tests/source-parser.test.ts && tsx tests/agents.test.ts && tsx tests/installer.test.ts && tsx tests/e2e/install.test.ts",
+    "test:unit": "tsx tests/source-parser.test.ts && tsx tests/agents.test.ts && tsx tests/installer.test.ts",
     "test:e2e": "tsx tests/e2e/install.test.ts",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"

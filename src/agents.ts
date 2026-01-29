@@ -145,10 +145,11 @@ export const agents: Record<AgentType, AgentConfig> = {
     displayName: "Claude Code",
     configPath: join(home, ".claude.json"),
     localConfigPath: ".mcp.json",
+    projectDetectPaths: [".mcp.json", ".claude"],
     configKey: "mcpServers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
-    detectInstalled: async () => {
+    detectGlobalInstall: async () => {
       return existsSync(join(home, ".claude"));
     },
   },
@@ -157,10 +158,11 @@ export const agents: Record<AgentType, AgentConfig> = {
     name: "claude-desktop",
     displayName: "Claude Desktop",
     configPath: join(appSupport, "Claude", "claude_desktop_config.json"),
+    projectDetectPaths: [], // Global only - no project support
     configKey: "mcpServers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
-    detectInstalled: async () => {
+    detectGlobalInstall: async () => {
       return existsSync(join(appSupport, "Claude"));
     },
   },
@@ -172,10 +174,11 @@ export const agents: Record<AgentType, AgentConfig> = {
       process.env.CODEX_HOME || join(home, ".codex"),
       "config.toml",
     ),
+    projectDetectPaths: [], // Global only - no project support
     configKey: "mcp_servers",
     format: "toml",
     supportedTransports: ["stdio", "http", "sse"],
-    detectInstalled: async () => {
+    detectGlobalInstall: async () => {
       return existsSync(join(home, ".codex"));
     },
     transformConfig: transformCodexConfig,
@@ -186,10 +189,11 @@ export const agents: Record<AgentType, AgentConfig> = {
     displayName: "Cursor",
     configPath: join(home, ".cursor", "mcp.json"),
     localConfigPath: ".cursor/mcp.json",
+    projectDetectPaths: [".cursor"],
     configKey: "mcpServers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
-    detectInstalled: async () => {
+    detectGlobalInstall: async () => {
       return existsSync(join(home, ".cursor"));
     },
   },
@@ -199,10 +203,11 @@ export const agents: Record<AgentType, AgentConfig> = {
     displayName: "Gemini CLI",
     configPath: join(home, ".gemini", "settings.json"),
     localConfigPath: ".gemini/settings.json",
+    projectDetectPaths: [".gemini"],
     configKey: "mcpServers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
-    detectInstalled: async () => {
+    detectGlobalInstall: async () => {
       return existsSync(join(home, ".gemini"));
     },
   },
@@ -211,10 +216,12 @@ export const agents: Record<AgentType, AgentConfig> = {
     name: "goose",
     displayName: "Goose",
     configPath: join(home, ".config", "goose", "config.yaml"),
+    localConfigPath: ".goose/config.yaml",
+    projectDetectPaths: [".goose"],
     configKey: "extensions",
     format: "yaml",
     supportedTransports: ["stdio", "http"], // Goose does not support SSE
-    detectInstalled: async () => {
+    detectGlobalInstall: async () => {
       return existsSync(join(home, ".config", "goose"));
     },
     transformConfig: transformGooseConfig,
@@ -225,10 +232,11 @@ export const agents: Record<AgentType, AgentConfig> = {
     displayName: "OpenCode",
     configPath: join(home, ".config", "opencode", "opencode.json"),
     localConfigPath: ".opencode.json",
+    projectDetectPaths: [".opencode.json", ".opencode"],
     configKey: "mcp",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
-    detectInstalled: async () => {
+    detectGlobalInstall: async () => {
       return existsSync(join(home, ".config", "opencode"));
     },
     transformConfig: transformOpenCodeConfig,
@@ -239,10 +247,11 @@ export const agents: Record<AgentType, AgentConfig> = {
     displayName: "VS Code",
     configPath: join(vscodePath, "mcp.json"),
     localConfigPath: ".vscode/mcp.json",
+    projectDetectPaths: [".vscode"],
     configKey: "mcpServers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
-    detectInstalled: async () => {
+    detectGlobalInstall: async () => {
       return existsSync(vscodePath);
     },
   },
@@ -258,10 +267,11 @@ export const agents: Record<AgentType, AgentConfig> = {
             "settings.json",
           )
         : join(home, ".config", "zed", "settings.json"),
+    projectDetectPaths: [], // Global only - no project support
     configKey: "context_servers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
-    detectInstalled: async () => {
+    detectGlobalInstall: async () => {
       return (
         existsSync(join(home, ".config", "zed")) ||
         existsSync(join(process.env.APPDATA || "", "Zed"))
@@ -286,18 +296,85 @@ export function getAgentConfig(type: AgentType): AgentConfig {
 }
 
 /**
- * Detect which agents are installed
+ * Check if an agent supports project-level (local) config
  */
-export async function detectInstalledAgents(): Promise<AgentType[]> {
-  const installed: AgentType[] = [];
+export function supportsProjectConfig(agentType: AgentType): boolean {
+  return agents[agentType].localConfigPath !== undefined;
+}
+
+/**
+ * Get agents that support project-level config
+ */
+export function getProjectCapableAgents(): AgentType[] {
+  return (Object.keys(agents) as AgentType[]).filter((type) =>
+    supportsProjectConfig(type),
+  );
+}
+
+/**
+ * Get agents that only support global config
+ */
+export function getGlobalOnlyAgents(): AgentType[] {
+  return (Object.keys(agents) as AgentType[]).filter(
+    (type) => !supportsProjectConfig(type),
+  );
+}
+
+/**
+ * Detect agents based on project-level files in the given directory
+ * Only checks agents that support project config
+ */
+export function detectProjectAgents(cwd?: string): AgentType[] {
+  const dir = cwd || process.cwd();
+  const detected: AgentType[] = [];
 
   for (const [type, config] of Object.entries(agents)) {
-    if (await config.detectInstalled()) {
-      installed.push(type as AgentType);
+    // Skip global-only agents
+    if (!config.localConfigPath) continue;
+
+    for (const detectPath of config.projectDetectPaths) {
+      if (existsSync(join(dir, detectPath))) {
+        detected.push(type as AgentType);
+        break;
+      }
     }
   }
 
-  return installed;
+  return detected;
+}
+
+/**
+ * Detect which agents are installed globally
+ * Only checks global-only agents (agents without project support)
+ */
+export async function detectGlobalOnlyAgents(): Promise<AgentType[]> {
+  const detected: AgentType[] = [];
+
+  for (const [type, config] of Object.entries(agents)) {
+    // Only check global-only agents
+    if (config.localConfigPath) continue;
+
+    if (await config.detectGlobalInstall()) {
+      detected.push(type as AgentType);
+    }
+  }
+
+  return detected;
+}
+
+/**
+ * Detect all globally installed agents (for use with -g flag)
+ */
+export async function detectAllGlobalAgents(): Promise<AgentType[]> {
+  const detected: AgentType[] = [];
+
+  for (const [type, config] of Object.entries(agents)) {
+    if (await config.detectGlobalInstall()) {
+      detected.push(type as AgentType);
+    }
+  }
+
+  return detected;
 }
 
 /**

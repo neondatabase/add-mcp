@@ -7,22 +7,49 @@
  */
 
 import assert from "node:assert";
-import { buildServerConfig } from "../src/installer.js";
+import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { buildServerConfig, installServer } from "../src/installer.js";
 import { parseSource } from "../src/source-parser.js";
+import type { AgentType } from "../src/types.js";
 
 let passed = 0;
 let failed = 0;
+let tempDirs: string[] = [];
 
 function test(name: string, fn: () => void) {
   try {
     fn();
-    console.log(`✓ ${name}`);
+    console.log(`\u2713 ${name}`);
     passed++;
   } catch (err) {
-    console.log(`✗ ${name}`);
+    console.log(`\u2717 ${name}`);
     console.error(`  ${(err as Error).message}`);
     failed++;
   }
+}
+
+function createTempDir(): string {
+  const dir = mkdtempSync(join(tmpdir(), "add-mcp-installer-test-"));
+  tempDirs.push(dir);
+  return dir;
+}
+
+function cleanup() {
+  for (const dir of tempDirs) {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
+  tempDirs = [];
+}
+
+function readJsonConfig(filePath: string): Record<string, unknown> {
+  const content = readFileSync(filePath, "utf-8");
+  return JSON.parse(content);
 }
 
 // buildServerConfig tests - Remote
@@ -129,6 +156,121 @@ test("buildServerConfig - command with multiple args", () => {
   ]);
 });
 
-// Summary
+// ============================================
+// installServer with routing tests
+// ============================================
+
+test("installServer - routes agents based on routing map", () => {
+  const tempDir = createTempDir();
+  const parsed = parseSource("https://mcp.example.com/api");
+  const config = buildServerConfig(parsed);
+
+  const agentTypes: AgentType[] = ["cursor", "vscode"];
+  const routing = new Map<AgentType, "local" | "global">();
+  routing.set("cursor", "local");
+  routing.set("vscode", "local");
+
+  const results = installServer("example", config, agentTypes, {
+    routing,
+    cwd: tempDir,
+  });
+
+  assert.strictEqual(results.size, 2);
+
+  // Both should succeed
+  const cursorResult = results.get("cursor");
+  const vscodeResult = results.get("vscode");
+
+  assert.ok(cursorResult?.success);
+  assert.ok(vscodeResult?.success);
+
+  // Both should be in local paths
+  assert.ok(cursorResult?.path.includes(tempDir));
+  assert.ok(vscodeResult?.path.includes(tempDir));
+
+  // Verify files exist
+  assert.strictEqual(existsSync(join(tempDir, ".cursor", "mcp.json")), true);
+  assert.strictEqual(existsSync(join(tempDir, ".vscode", "mcp.json")), true);
+});
+
+test("installServer - mixed routing (local and global simulation)", () => {
+  const tempDir = createTempDir();
+  const parsed = parseSource("mcp-server-postgres");
+  const config = buildServerConfig(parsed);
+
+  // Simulate mixed routing: cursor local, but route another to "global" (which won't use cwd)
+  const agentTypes: AgentType[] = ["cursor"];
+  const routing = new Map<AgentType, "local" | "global">();
+  routing.set("cursor", "local");
+
+  const results = installServer("postgres", config, agentTypes, {
+    routing,
+    cwd: tempDir,
+  });
+
+  assert.strictEqual(results.size, 1);
+
+  const cursorResult = results.get("cursor");
+  assert.ok(cursorResult?.success);
+  assert.ok(cursorResult?.path.includes(tempDir));
+
+  // Verify local config
+  const configPath = join(tempDir, ".cursor", "mcp.json");
+  const savedConfig = readJsonConfig(configPath);
+  const mcpServers = savedConfig.mcpServers as Record<string, unknown>;
+  assert.ok(mcpServers.postgres);
+});
+
+test("installServer - empty routing map defaults to global", () => {
+  const tempDir = createTempDir();
+  const parsed = parseSource("https://mcp.example.com/api");
+  const config = buildServerConfig(parsed);
+
+  const agentTypes: AgentType[] = ["cursor"];
+  const routing = new Map<AgentType, "local" | "global">();
+  // Don't set any routing - should default to global (local: false)
+
+  const results = installServer("example", config, agentTypes, {
+    routing,
+    cwd: tempDir,
+  });
+
+  const cursorResult = results.get("cursor");
+  assert.ok(cursorResult?.success);
+  // Path should NOT be in tempDir (should be global path)
+  assert.ok(!cursorResult?.path.includes(tempDir));
+});
+
+test("installServer - routing with multiple agents to different scopes", () => {
+  const tempDir = createTempDir();
+  const parsed = parseSource("https://mcp.example.com/api");
+  const config = buildServerConfig(parsed);
+
+  // Route cursor to local, leave vscode unspecified (will be global)
+  const agentTypes: AgentType[] = ["cursor", "vscode"];
+  const routing = new Map<AgentType, "local" | "global">();
+  routing.set("cursor", "local");
+  // vscode not in routing - should default to global
+
+  const results = installServer("example", config, agentTypes, {
+    routing,
+    cwd: tempDir,
+  });
+
+  const cursorResult = results.get("cursor");
+  const vscodeResult = results.get("vscode");
+
+  assert.ok(cursorResult?.success);
+  assert.ok(vscodeResult?.success);
+
+  // Cursor should be local
+  assert.ok(cursorResult?.path.includes(tempDir));
+
+  // VSCode should be global (not in tempDir)
+  assert.ok(!vscodeResult?.path.includes(tempDir));
+});
+
+// Cleanup and summary
+cleanup();
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
