@@ -92,7 +92,7 @@ program
   )
   .option("--type <type>", "Alias for --transport")
   .option("-y, --yes", "Skip confirmation prompts")
-  .option("--all", "Install to all agents without prompts (implies -y -g)")
+  .option("--all", "Install to all agents")
   .action(async (target: string | undefined, options: Options) => {
     await main(target, options);
   });
@@ -100,11 +100,8 @@ program
 program.parse();
 
 async function main(target: string | undefined, options: Options) {
-  // Handle --all flag
-  if (options.all) {
-    options.yes = true;
-    options.global = true;
-  }
+  // --all just selects all agents, doesn't imply --yes or --global
+  // Use --yes to skip prompts, --global to install globally
 
   console.log();
   p.intro(chalk.bgCyan.black(" add-mcp "));

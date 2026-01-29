@@ -43,7 +43,7 @@ npx add-mcp "node /path/to/server.js --port 3000"
 | `--type <type>`          | Alias for `--transport`                                                  |
 | `-n, --name <name>`      | Server name (auto-inferred if not provided)                              |
 | `-y, --yes`              | Skip all confirmation prompts                                            |
-| `--all`                  | Install to all agents without prompts                                    |
+| `--all`                  | Install to all agents                                                    |
 
 ### Examples
 
@@ -60,8 +60,11 @@ npx add-mcp @modelcontextprotocol/server-postgres --name postgres
 # Non-interactive installation (CI/CD friendly)
 npx add-mcp https://mcp.example.com/mcp -g -a claude-code -y
 
-# Install to all agents without prompts
+# Install to all agents
 npx add-mcp mcp-server-github --all
+
+# Install to all agents, globally, without prompts
+npx add-mcp mcp-server-github --all -g -y
 ```
 
 ### Installation Scope
