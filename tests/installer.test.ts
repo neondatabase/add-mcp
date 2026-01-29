@@ -26,7 +26,7 @@ function test(name: string, fn: () => void) {
 }
 
 // buildServerConfig tests - Remote
-test("buildServerConfig - remote URL", () => {
+test("buildServerConfig - remote URL defaults to http", () => {
   const parsed = parseSource("https://mcp.example.com/api");
   const config = buildServerConfig(parsed);
 
@@ -41,6 +41,22 @@ test("buildServerConfig - remote URL with path", () => {
 
   assert.strictEqual(config.type, "http");
   assert.strictEqual(config.url, "https://api.company.com/mcp/v1");
+});
+
+test("buildServerConfig - remote URL with transport sse", () => {
+  const parsed = parseSource("https://mcp.example.com/sse");
+  const config = buildServerConfig(parsed, { transport: "sse" });
+
+  assert.strictEqual(config.type, "sse");
+  assert.strictEqual(config.url, "https://mcp.example.com/sse");
+});
+
+test("buildServerConfig - remote URL with transport http", () => {
+  const parsed = parseSource("https://mcp.example.com/mcp");
+  const config = buildServerConfig(parsed, { transport: "http" });
+
+  assert.strictEqual(config.type, "http");
+  assert.strictEqual(config.url, "https://mcp.example.com/mcp");
 });
 
 // buildServerConfig tests - Package

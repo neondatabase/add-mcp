@@ -2,132 +2,151 @@
 
 Install MCP servers onto coding agents with a single command.
 
+<!-- agent-list:start -->
+
+Supports **OpenCode**, **Claude Code**, **Codex**, **Cursor**, and [5 more](#supported-agents).
+
+<!-- agent-list:end -->
+
+## Install an MCP Server
+
 ```bash
-npx add-mcp <target>
+npx add-mcp https://mcp.example.com/sse
 ```
 
-Supports Opencode, Claude Code, Codex, Cursor, and [more](https://github.com/neondatabase/add-mcp/blob/main/README.md#supported-agents).
-
-## Features
-
-- Install MCP servers to multiple AI coding agents at once
-- Supports both remote (HTTP/SSE) and local (stdio) MCP servers
-- Handles different config formats (JSON, YAML, TOML)
-- Supports project-level and global installation
-
-## Usage
-
-### Remote MCP Server (HTTP)
+### Source Formats
 
 ```bash
-# Install a remote MCP server
-npx add-mcp https://mcp.example.com/api
+# Remote MCP server (HTTP streamable - default)
+npx add-mcp https://mcp.example.com/mcp
 
-# With custom name
-npx add-mcp https://mcp.example.com/api --name my-server
-```
+# Remote MCP server (SSE transport)
+npx add-mcp https://mcp.example.com/sse --transport sse
 
-### Local MCP Server (Package)
-
-```bash
-# Install from npm package
+# npm package (runs via npx)
 npx add-mcp @modelcontextprotocol/server-postgres
 
-# Install with custom name
-npx add-mcp mcp-server-github --name github
-```
-
-### Local MCP Server (Command)
-
-```bash
-# Install with full command
+# Full command with arguments
 npx add-mcp "npx -y @org/mcp-server --flag value"
 
 # Node.js script
 npx add-mcp "node /path/to/server.js --port 3000"
 ```
 
-## Options
+### Options
 
+| Option                   | Description                                                              |
+| ------------------------ | ------------------------------------------------------------------------ |
+| `-g, --global`           | Install to user directory instead of project                             |
+| `-a, --agent <agent>`    | Target specific agents (e.g., `cursor`, `claude-code`). Can be repeated. |
+| `-t, --transport <type>` | Transport type for remote servers: `http` (default), `sse`               |
+| `--type <type>`          | Alias for `--transport`                                                  |
+| `-n, --name <name>`      | Server name (auto-inferred if not provided)                              |
+| `-y, --yes`              | Skip all confirmation prompts                                            |
+| `--all`                  | Install to all agents without prompts                                    |
+
+### Examples
+
+```bash
+# Install to specific agents
+npx add-mcp https://mcp.example.com/mcp -a cursor -a claude-code
+
+# Install with SSE transport
+npx add-mcp https://mcp.neon.tech/sse --transport sse
+
+# Install with custom server name
+npx add-mcp @modelcontextprotocol/server-postgres --name postgres
+
+# Non-interactive installation (CI/CD friendly)
+npx add-mcp https://mcp.example.com/mcp -g -a claude-code -y
+
+# Install to all agents without prompts
+npx add-mcp mcp-server-github --all
 ```
-Usage: add-mcp [options] [target]
 
-Arguments:
-  target                   MCP server URL (remote) or package name (local stdio)
+### Installation Scope
 
-Options:
-  -V, --version            output the version number
-  -g, --global             Install globally (user-level) instead of project-level
-  -a, --agent <agents...>  Specify agents to install to
-  -n, --name <name>        Server name (auto-inferred from target if not provided)
-  -y, --yes                Skip confirmation prompts
-  -l, --list               List supported agents
-  --all                    Install to all agents without prompts (implies -y -g)
-  -h, --help               display help for command
-```
+| Scope       | Flag      | Location                | Use Case                                      |
+| ----------- | --------- | ----------------------- | --------------------------------------------- |
+| **Project** | (default) | `.cursor/mcp.json` etc. | Committed with your project, shared with team |
+| **Global**  | `-g`      | `~/.cursor/mcp.json`    | Available across all projects                 |
+
+## Transport Types
+
+MCP supports different transport mechanisms for remote servers:
+
+| Transport | Flag               | Description                                    |
+| --------- | ------------------ | ---------------------------------------------- |
+| **HTTP**  | `--transport http` | Streamable HTTP (default, modern standard)     |
+| **SSE**   | `--transport sse`  | Server-Sent Events (legacy, still widely used) |
+
+Local servers (npm packages, commands) always use **stdio** transport.
 
 ## Supported Agents
 
-<!-- AGENTS_TABLE_START -->
+MCP servers can be installed to any of these agents:
 
-| Agent          | CLI Key          | Format | Local Support |
-| -------------- | ---------------- | ------ | ------------- |
-| Claude Code    | `claude-code`    | JSON   | Yes           |
-| Claude Desktop | `claude-desktop` | JSON   | No            |
-| Codex          | `codex`          | TOML   | No            |
-| Cursor         | `cursor`         | JSON   | Yes           |
-| Gemini CLI     | `gemini-cli`     | JSON   | Yes           |
-| Goose          | `goose`          | YAML   | No            |
-| OpenCode       | `opencode`       | JSON   | Yes           |
-| VS Code        | `vscode`         | JSON   | Yes           |
-| Zed            | `zed`            | JSON   | No            |
+<!-- supported-agents:start -->
 
-<!-- AGENTS_TABLE_END -->
+| Agent          | `--agent`        | Project Path            | Global Path                                                       |
+| -------------- | ---------------- | ----------------------- | ----------------------------------------------------------------- |
+| Claude Code    | `claude-code`    | `.mcp.json`             | `~/.claude.json`                                                  |
+| Claude Desktop | `claude-desktop` | -                       | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Codex          | `codex`          | -                       | `~/.codex/config.toml`                                            |
+| Cursor         | `cursor`         | `.cursor/mcp.json`      | `~/.cursor/mcp.json`                                              |
+| Gemini CLI     | `gemini-cli`     | `.gemini/settings.json` | `~/.gemini/settings.json`                                         |
+| Goose          | `goose`          | -                       | `~/.config/goose/config.yaml`                                     |
+| OpenCode       | `opencode`       | `.opencode.json`        | `~/.config/opencode/opencode.json`                                |
+| VS Code        | `vscode`         | `.vscode/mcp.json`      | `~/Library/Application Support/Code/User/mcp.json`                |
+| Zed            | `zed`            | -                       | `~/.config/zed/settings.json`                                     |
+
+<!-- supported-agents:end -->
 
 **Aliases:** `github-copilot` → `vscode`
 
-## Examples
+The CLI automatically detects which coding agents you have installed. If none are detected, you'll be prompted to select which agents to install to.
 
-### Install to specific agents
+### Transport Support
 
-```bash
-# Install to Cursor and Claude Code only
-npx add-mcp https://mcp.example.com/api -a cursor claude-code
+Not all agents support all transport types:
 
-# Install to VS Code (using alias)
-npx add-mcp mcp-server -a github-copilot
-```
+| Agent          | stdio | http | sse |
+| -------------- | ----- | ---- | --- |
+| Claude Code    | ✓     | ✓    | ✓   |
+| Claude Desktop | ✓     | ✓    | ✓   |
+| Codex          | ✓     | ✓    | ✓   |
+| Cursor         | ✓     | ✓    | ✓   |
+| Gemini CLI     | ✓     | ✓    | ✓   |
+| Goose          | ✓     | ✓    | ✗   |
+| OpenCode       | ✓     | ✓    | ✓   |
+| VS Code        | ✓     | ✓    | ✓   |
+| Zed            | ✓     | ✓    | ✓   |
 
-### Project vs Global installation
+## What are MCP Servers?
 
-```bash
-# Project-level (creates .cursor/mcp.json, .mcp.json, etc.)
-npx add-mcp mcp-server
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io/) servers extend your coding agent's capabilities by providing tools, resources, and context. MCP servers can:
 
-# Global (installs to ~/.cursor/mcp.json, ~/.claude.json, etc.)
-npx add-mcp mcp-server --global
-```
+- Connect to databases (PostgreSQL, MySQL, etc.)
+- Integrate with external services (GitHub, Linear, Notion)
+- Provide file system access
+- Offer specialized tools for your workflow
 
-### Non-interactive mode
+## Troubleshooting
 
-```bash
-# Skip all prompts, install globally to all detected agents
-npx add-mcp https://mcp.example.com/api -y -g
+### Transport mismatch error
 
-# Install to all agents without any prompts
-npx add-mcp mcp-server --all
-```
+If you get an error about transport not being supported, check that the agent supports your chosen transport type. For example, Goose doesn't support SSE transport.
 
-## Config File Locations
+### Server not loading
 
-| Agent          | Global                                                            | Local                   |
-| -------------- | ----------------------------------------------------------------- | ----------------------- |
-| Claude Code    | `~/.claude.json`                                                  | `.mcp.json`             |
-| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` | -                       |
-| Codex          | `~/.codex/config.toml`                                            | -                       |
-| Cursor         | `~/.cursor/mcp.json`                                              | `.cursor/mcp.json`      |
-| Gemini CLI     | `~/.gemini/settings.json`                                         | `.gemini/settings.json` |
-| Goose          | `~/.config/goose/config.yaml`                                     | -                       |
-| OpenCode       | `~/.config/opencode/opencode.json`                                | `.opencode.json`        |
-| VS Code        | `~/Library/Application Support/Code/User/mcp.json`                | `.vscode/mcp.json`      |
-| Zed            | `~/.config/zed/settings.json`                                     | -                       |
+- Verify the server URL is correct and accessible
+- Check the agent's MCP configuration file for syntax errors
+- Ensure the server name doesn't conflict with existing servers
+
+### Permission errors
+
+Ensure you have write access to the target configuration directory.
+
+## License
+
+Apache 2.0

@@ -40,6 +40,8 @@ export interface AgentConfig {
   configKey: string;
   /** Config file format */
   format: ConfigFormat;
+  /** Supported transport types for this agent */
+  supportedTransports: ("stdio" | "sse" | "http")[];
   /** Function to detect if agent is installed */
   detectInstalled: () => Promise<boolean>;
   /** Optional function to transform server config to agent-specific format */
@@ -63,11 +65,19 @@ export interface ParsedSource {
 }
 
 /**
+ * Transport types for MCP servers
+ * - stdio: Local process communication via stdin/stdout
+ * - sse: Server-Sent Events transport (HTTP GET for events + POST for messages)
+ * - http: Streamable HTTP transport (modern standard, single HTTP endpoint)
+ */
+export type TransportType = "sse" | "http";
+
+/**
  * MCP server configuration (standard format)
  */
 export interface McpServerConfig {
   /** For remote servers */
-  type?: "http" | "sse";
+  type?: TransportType;
   url?: string;
   headers?: Record<string, string>;
   /** For local stdio servers */

@@ -36,21 +36,19 @@ const { appSupport, vscodePath } = getPlatformPaths();
 
 /**
  * Transform config for Goose (YAML with different structure)
+ * Goose supports stdio and streamable-http (called "streamable_http" in their config)
  */
 function transformGooseConfig(
   serverName: string,
   config: McpServerConfig,
 ): unknown {
   if (config.url) {
-    // Remote server - Goose may not support this natively
-    // Fall back to using command-based approach with a note
+    // Remote server via streamable HTTP
     return {
       name: serverName,
-      cmd: "echo",
-      args: [`Remote MCP servers not directly supported. URL: ${config.url}`],
-      enabled: false,
-      envs: {},
-      type: "stdio",
+      type: "streamable_http",
+      url: config.url,
+      enabled: true,
       timeout: 300,
     };
   }
@@ -149,6 +147,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     localConfigPath: ".mcp.json",
     configKey: "mcpServers",
     format: "json",
+    supportedTransports: ["stdio", "http", "sse"],
     detectInstalled: async () => {
       return existsSync(join(home, ".claude"));
     },
@@ -160,6 +159,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     configPath: join(appSupport, "Claude", "claude_desktop_config.json"),
     configKey: "mcpServers",
     format: "json",
+    supportedTransports: ["stdio", "http", "sse"],
     detectInstalled: async () => {
       return existsSync(join(appSupport, "Claude"));
     },
@@ -174,6 +174,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     ),
     configKey: "mcp_servers",
     format: "toml",
+    supportedTransports: ["stdio", "http", "sse"],
     detectInstalled: async () => {
       return existsSync(join(home, ".codex"));
     },
@@ -187,6 +188,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     localConfigPath: ".cursor/mcp.json",
     configKey: "mcpServers",
     format: "json",
+    supportedTransports: ["stdio", "http", "sse"],
     detectInstalled: async () => {
       return existsSync(join(home, ".cursor"));
     },
@@ -199,6 +201,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     localConfigPath: ".gemini/settings.json",
     configKey: "mcpServers",
     format: "json",
+    supportedTransports: ["stdio", "http", "sse"],
     detectInstalled: async () => {
       return existsSync(join(home, ".gemini"));
     },
@@ -210,6 +213,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     configPath: join(home, ".config", "goose", "config.yaml"),
     configKey: "extensions",
     format: "yaml",
+    supportedTransports: ["stdio", "http"], // Goose does not support SSE
     detectInstalled: async () => {
       return existsSync(join(home, ".config", "goose"));
     },
@@ -223,6 +227,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     localConfigPath: ".opencode.json",
     configKey: "mcp",
     format: "json",
+    supportedTransports: ["stdio", "http", "sse"],
     detectInstalled: async () => {
       return existsSync(join(home, ".config", "opencode"));
     },
@@ -236,6 +241,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     localConfigPath: ".vscode/mcp.json",
     configKey: "mcpServers",
     format: "json",
+    supportedTransports: ["stdio", "http", "sse"],
     detectInstalled: async () => {
       return existsSync(vscodePath);
     },
@@ -254,6 +260,7 @@ export const agents: Record<AgentType, AgentConfig> = {
         : join(home, ".config", "zed", "settings.json"),
     configKey: "context_servers",
     format: "json",
+    supportedTransports: ["stdio", "http", "sse"],
     detectInstalled: async () => {
       return (
         existsSync(join(home, ".config", "zed")) ||
@@ -291,4 +298,14 @@ export async function detectInstalledAgents(): Promise<AgentType[]> {
   }
 
   return installed;
+}
+
+/**
+ * Check if an agent supports a specific transport type
+ */
+export function isTransportSupported(
+  agentType: AgentType,
+  transport: "stdio" | "sse" | "http",
+): boolean {
+  return agents[agentType].supportedTransports.includes(transport);
 }

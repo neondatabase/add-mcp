@@ -303,7 +303,7 @@ test("E2E: Overwrite existing server with same name", () => {
 // E2E Tests: YAML format (Goose)
 // ============================================
 
-test("E2E: Install to Goose (YAML format, transformed)", () => {
+test("E2E: Install to Goose (YAML format, transformed) - local server", () => {
   const parsed = parseSource("mcp-server-postgres");
   const config = buildServerConfig(parsed);
 
@@ -319,6 +319,27 @@ test("E2E: Install to Goose (YAML format, transformed)", () => {
     "mcp-server-postgres",
   ]);
   assert.strictEqual((transformed as Record<string, unknown>).type, "stdio");
+  assert.strictEqual((transformed as Record<string, unknown>).enabled, true);
+});
+
+test("E2E: Install to Goose (YAML format, transformed) - remote server", () => {
+  const parsed = parseSource("https://mcp.example.com/mcp");
+  const config = buildServerConfig(parsed);
+
+  const gooseAgent = agents.goose;
+
+  // Test the transform function for remote servers
+  const transformed = gooseAgent.transformConfig!("example", config);
+
+  assert.strictEqual((transformed as Record<string, unknown>).name, "example");
+  assert.strictEqual(
+    (transformed as Record<string, unknown>).type,
+    "streamable_http",
+  );
+  assert.strictEqual(
+    (transformed as Record<string, unknown>).url,
+    "https://mcp.example.com/mcp",
+  );
   assert.strictEqual((transformed as Record<string, unknown>).enabled, true);
 });
 

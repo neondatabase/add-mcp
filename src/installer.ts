@@ -6,6 +6,7 @@ import type {
   McpServerConfig,
   ParsedSource,
   ConfigFile,
+  TransportType,
 } from "./types.js";
 import { agents } from "./agents.js";
 import {
@@ -27,13 +28,21 @@ export interface InstallResult {
   error?: string;
 }
 
+export interface BuildServerConfigOptions {
+  /** Transport type for remote servers (default: http) */
+  transport?: TransportType;
+}
+
 /**
  * Build MCP server config from parsed source
  */
-export function buildServerConfig(parsed: ParsedSource): McpServerConfig {
+export function buildServerConfig(
+  parsed: ParsedSource,
+  options: BuildServerConfigOptions = {},
+): McpServerConfig {
   if (parsed.type === "remote") {
     return {
-      type: "http",
+      type: options.transport ?? "http",
       url: parsed.value,
     };
   }

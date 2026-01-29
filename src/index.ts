@@ -4,9 +4,14 @@ import { program } from "commander";
 import * as p from "@clack/prompts";
 import chalk from "chalk";
 import { homedir } from "os";
-import type { AgentType } from "./types.js";
+import type { AgentType, TransportType } from "./types.js";
 import { agentAliases } from "./types.js";
-import { agents, detectInstalledAgents, getAgentTypes } from "./agents.js";
+import {
+  agents,
+  detectInstalledAgents,
+  getAgentTypes,
+  isTransportSupported,
+} from "./agents.js";
 import { parseSource, isRemoteSource } from "./source-parser.js";
 import {
   buildServerConfig,
@@ -52,9 +57,17 @@ interface Options {
   global?: boolean;
   agent?: string[];
   name?: string;
+  transport?: string;
+  type?: string;
   yes?: boolean;
-  list?: boolean;
   all?: boolean;
+}
+
+/**
+ * Collect multiple values for repeatable options
+ */
+function collect(value: string, previous: string[]): string[] {
+  return previous.concat([value]);
 }
 
 program
@@ -68,13 +81,17 @@ program
     "-g, --global",
     "Install globally (user-level) instead of project-level",
   )
-  .option("-a, --agent <agents...>", "Specify agents to install to")
+  .option("-a, --agent <agent>", "Specify agents to install to", collect, [])
   .option(
     "-n, --name <name>",
     "Server name (auto-inferred from target if not provided)",
   )
+  .option(
+    "-t, --transport <type>",
+    "Transport type for remote servers (http, sse)",
+  )
+  .option("--type <type>", "Alias for --transport")
   .option("-y, --yes", "Skip confirmation prompts")
-  .option("-l, --list", "List supported agents")
   .option("--all", "Install to all agents without prompts (implies -y -g)")
   .action(async (target: string | undefined, options: Options) => {
     await main(target, options);
@@ -91,27 +108,6 @@ async function main(target: string | undefined, options: Options) {
 
   console.log();
   p.intro(chalk.bgCyan.black(" add-mcp "));
-
-  // List supported agents
-  if (options.list) {
-    console.log();
-    p.log.step(chalk.bold("Supported Agents"));
-
-    const allTypes = getAgentTypes();
-    for (const type of allTypes) {
-      const agent = agents[type];
-      const hasLocal = agent.localConfigPath
-        ? chalk.dim(" (supports local)")
-        : "";
-      p.log.message(`  ${chalk.cyan(type)} - ${agent.displayName}${hasLocal}`);
-    }
-
-    console.log();
-    p.log.info(chalk.dim("Aliases: github-copilot → vscode"));
-    console.log();
-    p.outro("Use -a/--agent to specify agents");
-    return;
-  }
 
   // Require target
   if (!target) {
@@ -146,8 +142,28 @@ async function main(target: string | undefined, options: Options) {
   const serverName = options.name || parsed.inferredName;
   p.log.info(`Server name: ${chalk.cyan(serverName)}`);
 
+  // Handle transport option (--transport or --type)
+  const transportValue = options.transport || options.type;
+  let resolvedTransport: TransportType | undefined;
+
+  if (transportValue) {
+    const validTransports = ["http", "sse"];
+    if (!validTransports.includes(transportValue)) {
+      p.log.error(
+        `Invalid transport: ${transportValue}. Valid options: ${validTransports.join(", ")}`,
+      );
+      process.exit(1);
+    }
+    resolvedTransport = transportValue as TransportType;
+    if (!isRemoteSource(parsed)) {
+      p.log.warn("--transport is only used for remote URLs, ignoring");
+    }
+  }
+
   // Build server config
-  const serverConfig = buildServerConfig(parsed);
+  const serverConfig = buildServerConfig(parsed, {
+    transport: resolvedTransport,
+  });
 
   // Determine target agents
   let targetAgents: AgentType[];
@@ -238,6 +254,42 @@ async function main(target: string | undefined, options: Options) {
       }
 
       targetAgents = selected as AgentType[];
+    }
+  }
+
+  // Validate transport compatibility with selected agents
+  const requiredTransport: "stdio" | "sse" | "http" = isRemoteSource(parsed)
+    ? (resolvedTransport ?? "http")
+    : "stdio";
+
+  const unsupportedAgents = targetAgents.filter(
+    (a) => !isTransportSupported(a, requiredTransport),
+  );
+
+  if (unsupportedAgents.length > 0) {
+    const unsupportedNames = unsupportedAgents
+      .map((a) => agents[a].displayName)
+      .join(", ");
+
+    if (options.all) {
+      // --all flag: warn but continue with supported agents
+      p.log.warn(
+        `Skipping agents that don't support ${requiredTransport} transport: ${unsupportedNames}`,
+      );
+      targetAgents = targetAgents.filter((a) =>
+        isTransportSupported(a, requiredTransport),
+      );
+
+      if (targetAgents.length === 0) {
+        p.log.error("No agents support this transport type");
+        process.exit(1);
+      }
+    } else {
+      // Explicit agent selection: error
+      p.log.error(
+        `The following agents don't support ${requiredTransport} transport: ${unsupportedNames}`,
+      );
+      process.exit(1);
     }
   }
 
