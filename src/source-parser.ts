@@ -46,15 +46,66 @@ function isPackageName(input: string): boolean {
 }
 
 /**
+ * Common TLDs to strip from hostnames
+ */
+const commonTlds = new Set([
+  "com",
+  "org",
+  "net",
+  "io",
+  "dev",
+  "ai",
+  "tech",
+  "co",
+  "app",
+  "cloud",
+  "sh",
+  "run",
+]);
+
+/**
+ * Extract a clean brand/product name from a URL hostname
+ * Examples:
+ *   "mcp.neon.tech" -> "neon"
+ *   "workos.com" -> "workos"
+ *   "mcp.sentry.com" -> "sentry"
+ *   "api.example.io" -> "example"
+ */
+function extractBrandFromHostname(hostname: string): string {
+  // Split hostname into parts
+  const parts = hostname.split(".");
+
+  // Filter out TLDs and common prefixes like "mcp", "api", "www"
+  const meaningfulParts = parts.filter((part) => {
+    const lower = part.toLowerCase();
+    // Skip TLDs
+    if (commonTlds.has(lower)) return false;
+    // Skip common prefixes
+    if (lower === "mcp" || lower === "api" || lower === "www") return false;
+    return true;
+  });
+
+  // Return the first meaningful part, or fallback
+  if (meaningfulParts.length > 0) {
+    return meaningfulParts[0]!;
+  }
+
+  // Fallback: return hostname without TLD
+  if (parts.length >= 2) {
+    return parts[parts.length - 2]!;
+  }
+
+  return "mcp-server";
+}
+
+/**
  * Infer server name from input
  */
 function inferName(input: string, type: SourceType): string {
   if (type === "remote") {
     try {
       const url = new URL(input);
-      // Use hostname, replacing dots with dashes
-      // e.g., "mcp.example.com" -> "mcp-example-com"
-      return url.hostname.replace(/\./g, "-");
+      return extractBrandFromHostname(url.hostname);
     } catch {
       // Fallback for malformed URLs
       return "mcp-server";

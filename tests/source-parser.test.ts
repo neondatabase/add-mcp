@@ -29,24 +29,44 @@ function test(name: string, fn: () => void) {
 }
 
 // Remote URL tests
-test("Remote URL - HTTPS", () => {
+test("Remote URL - HTTPS with mcp subdomain", () => {
   const result = parseSource("https://mcp.example.com/api");
   assert.strictEqual(result.type, "remote");
   assert.strictEqual(result.value, "https://mcp.example.com/api");
-  assert.strictEqual(result.inferredName, "mcp-example-com");
+  // Extracts brand name, stripping "mcp" prefix and TLD
+  assert.strictEqual(result.inferredName, "example");
 });
 
-test("Remote URL - HTTP", () => {
+test("Remote URL - HTTP localhost", () => {
   const result = parseSource("http://localhost:3000/mcp");
   assert.strictEqual(result.type, "remote");
   assert.strictEqual(result.value, "http://localhost:3000/mcp");
   assert.strictEqual(result.inferredName, "localhost");
 });
 
-test("Remote URL - with path", () => {
+test("Remote URL - with api subdomain", () => {
   const result = parseSource("https://api.company.com/mcp/v1");
   assert.strictEqual(result.type, "remote");
-  assert.strictEqual(result.inferredName, "api-company-com");
+  // Strips "api" prefix and ".com" TLD
+  assert.strictEqual(result.inferredName, "company");
+});
+
+test("Remote URL - mcp.neon.tech extracts neon", () => {
+  const result = parseSource("https://mcp.neon.tech/mcp");
+  assert.strictEqual(result.type, "remote");
+  assert.strictEqual(result.inferredName, "neon");
+});
+
+test("Remote URL - workos.com extracts workos", () => {
+  const result = parseSource("https://workos.com/mcp");
+  assert.strictEqual(result.type, "remote");
+  assert.strictEqual(result.inferredName, "workos");
+});
+
+test("Remote URL - mcp.sentry.io extracts sentry", () => {
+  const result = parseSource("https://mcp.sentry.io/api");
+  assert.strictEqual(result.type, "remote");
+  assert.strictEqual(result.inferredName, "sentry");
 });
 
 // Package name tests
