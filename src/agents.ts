@@ -248,7 +248,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     configPath: join(vscodePath, "mcp.json"),
     localConfigPath: ".vscode/mcp.json",
     projectDetectPaths: [".vscode"],
-    configKey: "mcpServers",
+    configKey: "servers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
     detectGlobalInstall: async () => {

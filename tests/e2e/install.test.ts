@@ -170,8 +170,9 @@ test("E2E: Install to VS Code (local)", () => {
   assert.strictEqual(existsSync(configPath), true);
 
   const savedConfig = readJsonConfig(configPath);
-  const mcpServers = savedConfig.mcpServers as Record<string, unknown>;
-  assert.ok(mcpServers.company);
+  // VSCode uses "servers" key, not "mcpServers"
+  const servers = savedConfig.servers as Record<string, unknown>;
+  assert.ok(servers.company);
 });
 
 test("E2E: Install to OpenCode (local) - transformed format", () => {
