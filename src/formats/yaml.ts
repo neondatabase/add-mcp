@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { dirname } from "path";
 import yaml from "js-yaml";
 import type { ConfigFile } from "../types.js";
+import { deepMerge } from "./utils.js";
 
 export function readYamlConfig(filePath: string): ConfigFile {
   if (!existsSync(filePath)) {
@@ -34,30 +35,4 @@ export function writeYamlConfig(filePath: string, config: ConfigFile): void {
   });
 
   writeFileSync(filePath, content);
-}
-
-function deepMerge(target: ConfigFile, source: ConfigFile): ConfigFile {
-  const result = { ...target };
-
-  for (const key in source) {
-    const sourceValue = source[key];
-    const targetValue = result[key];
-
-    if (
-      sourceValue &&
-      typeof sourceValue === "object" &&
-      !Array.isArray(sourceValue)
-    ) {
-      result[key] = deepMerge(
-        (targetValue && typeof targetValue === "object"
-          ? targetValue
-          : {}) as ConfigFile,
-        sourceValue as ConfigFile,
-      );
-    } else {
-      result[key] = sourceValue;
-    }
-  }
-
-  return result;
 }

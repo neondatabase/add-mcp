@@ -4,6 +4,7 @@ import { readYamlConfig, writeYamlConfig } from "./yaml.js";
 import { readTomlConfig, writeTomlConfig } from "./toml.js";
 
 export { setNestedValue } from "./json.js";
+export { deepMerge, getNestedValue } from "./utils.js";
 
 export function readConfig(filePath: string, format: ConfigFormat): ConfigFile {
   switch (format) {

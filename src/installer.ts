@@ -13,6 +13,7 @@ import {
   readConfig,
   writeConfig,
   buildConfigWithKey,
+  getNestedValue,
 } from "./formats/index.js";
 
 export interface InstallOptions {
@@ -94,19 +95,9 @@ export function isServerInstalled(
   const config = readConfig(configPath, agent.format);
   const serversKey = agent.configKey;
 
-  const keys = serversKey.split(".");
-  let current: unknown = config;
-
-  for (const key of keys) {
-    if (current && typeof current === "object" && key in current) {
-      current = (current as ConfigFile)[key];
-    } else {
-      return false;
-    }
-  }
-
-  if (current && typeof current === "object") {
-    return serverName in (current as ConfigFile);
+  const servers = getNestedValue(config, serversKey);
+  if (servers && typeof servers === "object") {
+    return serverName in (servers as ConfigFile);
   }
 
   return false;

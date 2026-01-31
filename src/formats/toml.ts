@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { dirname } from "path";
 import * as TOML from "@iarna/toml";
 import type { ConfigFile } from "../types.js";
+import { deepMerge } from "./utils.js";
 
 export function readTomlConfig(filePath: string): ConfigFile {
   if (!existsSync(filePath)) {
@@ -29,30 +30,4 @@ export function writeTomlConfig(filePath: string, config: ConfigFile): void {
   const content = TOML.stringify(mergedConfig as TOML.JsonMap);
 
   writeFileSync(filePath, content);
-}
-
-function deepMerge(target: ConfigFile, source: ConfigFile): ConfigFile {
-  const result = { ...target };
-
-  for (const key in source) {
-    const sourceValue = source[key];
-    const targetValue = result[key];
-
-    if (
-      sourceValue &&
-      typeof sourceValue === "object" &&
-      !Array.isArray(sourceValue)
-    ) {
-      result[key] = deepMerge(
-        (targetValue && typeof targetValue === "object"
-          ? targetValue
-          : {}) as ConfigFile,
-        sourceValue as ConfigFile,
-      );
-    } else {
-      result[key] = sourceValue;
-    }
-  }
-
-  return result;
 }
