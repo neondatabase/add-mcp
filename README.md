@@ -41,6 +41,17 @@ npx add-mcp "node /path/to/server.js --port 3000"
 | `-y, --yes`              | Skip all confirmation prompts                                            |
 | `--all`                  | Install to all agents                                                    |
 
+### Commands
+
+| Command       | Description                                           |
+| ------------- | ----------------------------------------------------- |
+| `list-agents` | List all supported coding agents with scope (project/global) |
+
+```bash
+# List all supported agents
+npx add-mcp list-agents
+```
+
 ### Examples
 
 ```bash

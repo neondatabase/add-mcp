@@ -156,7 +156,33 @@ program
     await main(target, options);
   });
 
+program
+  .command("list-agents")
+  .description("List all supported coding agents")
+  .action(() => {
+    listAgents();
+  });
+
 program.parse();
+
+function listAgents(): void {
+  showLogo();
+  console.log();
+  console.log(`${DIM}Supported agents:${RESET}`);
+  console.log();
+
+  const allAgentTypes = getAgentTypes();
+
+  for (const agentType of allAgentTypes) {
+    const agent = agents[agentType];
+    const hasProjectSupport = supportsProjectConfig(agentType);
+    const scope = hasProjectSupport ? "project, global" : "global";
+
+    console.log(`  ${TEXT}${agent.displayName}${RESET} ${DIM}(${scope})${RESET}`);
+  }
+
+  console.log();
+}
 
 async function main(target: string | undefined, options: Options) {
   // --all just selects all agents, doesn't imply --yes or --global
