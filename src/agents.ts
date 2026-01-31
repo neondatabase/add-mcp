@@ -265,10 +265,6 @@ export function getAgentTypes(): AgentType[] {
   return Object.keys(agents) as AgentType[];
 }
 
-export function getAgentConfig(type: AgentType): AgentConfig {
-  return agents[type];
-}
-
 export function supportsProjectConfig(agentType: AgentType): boolean {
   return agents[agentType].localConfigPath !== undefined;
 }
@@ -297,20 +293,6 @@ export function detectProjectAgents(cwd?: string): AgentType[] {
         detected.push(type as AgentType);
         break;
       }
-    }
-  }
-
-  return detected;
-}
-
-export async function detectGlobalOnlyAgents(): Promise<AgentType[]> {
-  const detected: AgentType[] = [];
-
-  for (const [type, config] of Object.entries(agents)) {
-    if (config.localConfigPath) continue;
-
-    if (await config.detectGlobalInstall()) {
-      detected.push(type as AgentType);
     }
   }
 

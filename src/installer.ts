@@ -5,16 +5,10 @@ import type {
   AgentConfig,
   McpServerConfig,
   ParsedSource,
-  ConfigFile,
   TransportType,
 } from "./types.js";
 import { agents } from "./agents.js";
-import {
-  readConfig,
-  writeConfig,
-  buildConfigWithKey,
-  getNestedValue,
-} from "./formats/index.js";
+import { writeConfig, buildConfigWithKey } from "./formats/index.js";
 
 export interface InstallOptions {
   /** Install to local (project-level) config instead of global */
@@ -69,7 +63,7 @@ export function buildServerConfig(
   };
 }
 
-export function getConfigPath(
+function getConfigPath(
   agent: AgentConfig,
   options: InstallOptions = {},
 ): string {
@@ -78,29 +72,6 @@ export function getConfigPath(
     return join(cwd, agent.localConfigPath);
   }
   return agent.configPath;
-}
-
-export function isServerInstalled(
-  serverName: string,
-  agentType: AgentType,
-  options: InstallOptions = {},
-): boolean {
-  const agent = agents[agentType];
-  const configPath = getConfigPath(agent, options);
-
-  if (!existsSync(configPath)) {
-    return false;
-  }
-
-  const config = readConfig(configPath, agent.format);
-  const serversKey = agent.configKey;
-
-  const servers = getNestedValue(config, serversKey);
-  if (servers && typeof servers === "object") {
-    return serverName in (servers as ConfigFile);
-  }
-
-  return false;
 }
 
 export function installServerForAgent(
@@ -168,10 +139,4 @@ export function installServer(
   }
 
   return results;
-}
-
-export function getAgentsWithLocalSupport(): AgentType[] {
-  return (Object.entries(agents) as [AgentType, AgentConfig][])
-    .filter(([_, config]) => config.localConfigPath !== undefined)
-    .map(([type, _]) => type);
 }

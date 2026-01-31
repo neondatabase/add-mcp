@@ -1,23 +1,10 @@
 import type { ConfigFile, ConfigFormat } from "../types.js";
-import { readJsonConfig, writeJsonConfig, setNestedValue } from "./json.js";
-import { readYamlConfig, writeYamlConfig } from "./yaml.js";
-import { readTomlConfig, writeTomlConfig } from "./toml.js";
+import { writeJsonConfig, setNestedValue } from "./json.js";
+import { writeYamlConfig } from "./yaml.js";
+import { writeTomlConfig } from "./toml.js";
 
 export { setNestedValue } from "./json.js";
 export { deepMerge, getNestedValue } from "./utils.js";
-
-export function readConfig(filePath: string, format: ConfigFormat): ConfigFile {
-  switch (format) {
-    case "json":
-      return readJsonConfig(filePath);
-    case "yaml":
-      return readYamlConfig(filePath);
-    case "toml":
-      return readTomlConfig(filePath);
-    default:
-      throw new Error(`Unsupported config format: ${format}`);
-  }
-}
 
 export function writeConfig(
   filePath: string,
