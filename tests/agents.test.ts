@@ -278,23 +278,8 @@ test("isTransportSupported - most agents support http", () => {
   }
 });
 
-test("isTransportSupported - goose does not support sse", () => {
-  assert.strictEqual(isTransportSupported("goose", "sse"), false);
-});
-
-test("isTransportSupported - other agents support sse", () => {
-  const sseAgents: AgentType[] = [
-    "claude-code",
-    "claude-desktop",
-    "codex",
-    "cursor",
-    "gemini-cli",
-    "opencode",
-    "vscode",
-    "zed",
-  ];
-
-  for (const type of sseAgents) {
+test("isTransportSupported - all agents support sse", () => {
+  for (const type of getAgentTypes()) {
     assert.strictEqual(
       isTransportSupported(type, "sse"),
       true,

@@ -36,17 +36,22 @@ const { appSupport, vscodePath } = getPlatformPaths();
 
 /**
  * Transform config for Goose (YAML with different structure)
- * Goose supports stdio and streamable-http (called "streamable_http" in their config)
+ * Goose supports stdio, sse, and streamable_http transports
+ * - stdio: local command-line extensions
+ * - sse: Server-Sent Events for remote servers
+ * - streamable_http: Streamable HTTP for remote servers (default for http)
  */
 function transformGooseConfig(
   serverName: string,
   config: McpServerConfig,
 ): unknown {
   if (config.url) {
-    // Remote server via streamable HTTP
+    // Remote server - use type field to determine transport
+    // Goose uses "sse" for SSE and "streamable_http" for HTTP
+    const gooseType = config.type === "sse" ? "sse" : "streamable_http";
     return {
       name: serverName,
-      type: "streamable_http",
+      type: gooseType,
       url: config.url,
       enabled: true,
       timeout: 300,
@@ -220,7 +225,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     projectDetectPaths: [".goose"],
     configKey: "extensions",
     format: "yaml",
-    supportedTransports: ["stdio", "http"], // Goose does not support SSE
+    supportedTransports: ["stdio", "http", "sse"], // Goose supports both SSE and streamable HTTP
     detectGlobalInstall: async () => {
       return existsSync(join(home, ".config", "goose"));
     },

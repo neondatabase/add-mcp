@@ -323,13 +323,13 @@ test("E2E: Install to Goose (YAML format, transformed) - local server", () => {
   assert.strictEqual((transformed as Record<string, unknown>).enabled, true);
 });
 
-test("E2E: Install to Goose (YAML format, transformed) - remote server", () => {
+test("E2E: Install to Goose (YAML format, transformed) - remote server (http)", () => {
   const parsed = parseSource("https://mcp.example.com/mcp");
   const config = buildServerConfig(parsed);
 
   const gooseAgent = agents.goose;
 
-  // Test the transform function for remote servers
+  // Test the transform function for remote servers (default http)
   const transformed = gooseAgent.transformConfig!("example", config);
 
   assert.strictEqual((transformed as Record<string, unknown>).name, "example");
@@ -340,6 +340,27 @@ test("E2E: Install to Goose (YAML format, transformed) - remote server", () => {
   assert.strictEqual(
     (transformed as Record<string, unknown>).url,
     "https://mcp.example.com/mcp",
+  );
+  assert.strictEqual((transformed as Record<string, unknown>).enabled, true);
+});
+
+test("E2E: Install to Goose (YAML format, transformed) - remote server (sse)", () => {
+  const parsed = parseSource("https://mcp.example.com/sse");
+  const config = buildServerConfig(parsed, { transport: "sse" });
+
+  const gooseAgent = agents.goose;
+
+  // Test the transform function for remote servers with SSE transport
+  const transformed = gooseAgent.transformConfig!("example-sse", config);
+
+  assert.strictEqual(
+    (transformed as Record<string, unknown>).name,
+    "example-sse",
+  );
+  assert.strictEqual((transformed as Record<string, unknown>).type, "sse");
+  assert.strictEqual(
+    (transformed as Record<string, unknown>).url,
+    "https://mcp.example.com/sse",
   );
   assert.strictEqual((transformed as Record<string, unknown>).enabled, true);
 });

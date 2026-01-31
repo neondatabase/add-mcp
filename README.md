@@ -10,10 +10,10 @@ Supports **OpenCode**, **Claude Code**, **Codex**, **Cursor**, and [5 more](#sup
 npx add-mcp https://mcp.example.com/sse
 ```
 
-### Source Formats
+### Usage Examples
 
 ```bash
-# Remote MCP server (HTTP streamable - default)
+# Remote MCP server (streamable HTTP)
 npx add-mcp https://mcp.example.com/mcp
 
 # Remote MCP server (SSE transport)
@@ -22,11 +22,29 @@ npx add-mcp https://mcp.example.com/sse --transport sse
 # npm package (runs via npx)
 npx add-mcp @modelcontextprotocol/server-postgres
 
+# Non-interactive installation to all detected agents in the project directory
+npx add-mcp https://mcp.example.com/mcp -y
+
+# Non-interactive installation to the global Claude Code config
+npx add-mcp https://mcp.example.com/mcp -g -a claude-code -y
+
 # Full command with arguments
 npx add-mcp "npx -y @org/mcp-server --flag value"
 
 # Node.js script
 npx add-mcp "node /path/to/server.js --port 3000"
+
+# Install for Cursor and Claude Code
+npx add-mcp https://mcp.example.com/mcp -a cursor -a claude-code
+
+# Install with custom server name
+npx add-mcp @modelcontextprotocol/server-postgres --name postgres
+
+# Install to all supported agents
+npx add-mcp mcp-server-github --all
+
+# Install to all agents, globally, without prompts
+npx add-mcp mcp-server-github --all -g -y
 ```
 
 ### Options
@@ -41,7 +59,9 @@ npx add-mcp "node /path/to/server.js --port 3000"
 | `-y, --yes`              | Skip all confirmation prompts                                            |
 | `--all`                  | Install to all agents                                                    |
 
-### Commands
+### Additional Commands
+
+Besides the implicit add command, `add-mcp` also supports the following commands:
 
 | Command       | Description                                                  |
 | ------------- | ------------------------------------------------------------ |
@@ -50,28 +70,6 @@ npx add-mcp "node /path/to/server.js --port 3000"
 ```bash
 # List all supported agents
 npx add-mcp list-agents
-```
-
-### Examples
-
-```bash
-# Install to specific agents
-npx add-mcp https://mcp.example.com/mcp -a cursor -a claude-code
-
-# Install with SSE transport
-npx add-mcp https://mcp.neon.tech/sse --transport sse
-
-# Install with custom server name
-npx add-mcp @modelcontextprotocol/server-postgres --name postgres
-
-# Non-interactive installation (CI/CD friendly)
-npx add-mcp https://mcp.example.com/mcp -g -a claude-code -y
-
-# Install to all agents
-npx add-mcp mcp-server-github --all
-
-# Install to all agents, globally, without prompts
-npx add-mcp mcp-server-github --all -g -y
 ```
 
 ### Installation Scope
@@ -103,12 +101,12 @@ The CLI automatically detects agents based on your environment:
 
 ## Transport Types
 
-MCP supports different transport mechanisms for remote servers:
+`add-mcp` supports all three transport types: HTTP, SSE, and stdio. Some agents require `type` option to be set to specify the transport type. You can use the `--type` or `--transport` option to specify the transport type:
 
-| Transport | Flag               | Description                                    |
-| --------- | ------------------ | ---------------------------------------------- |
-| **HTTP**  | `--transport http` | Streamable HTTP (default, modern standard)     |
-| **SSE**   | `--transport sse`  | Server-Sent Events (legacy, still widely used) |
+| Transport | Flag               | Description                                           |
+| --------- | ------------------ | ----------------------------------------------------- |
+| **HTTP**  | `--transport http` | Streamable HTTP (default)                             |
+| **SSE**   | `--transport sse`  | Server-Sent Events (deprecated by MCP but still used) |
 
 Local servers (npm packages, commands) always use **stdio** transport.
 
@@ -132,36 +130,16 @@ MCP servers can be installed to any of these agents:
 
 The CLI uses smart detection to find agents in your project directory and globally installed agents. See [Smart Detection](#smart-detection) for details.
 
-### Transport Support
-
-Not all agents support all transport types:
-
-| Agent          | stdio | http | sse |
-| -------------- | ----- | ---- | --- |
-| Claude Code    | ✓     | ✓    | ✓   |
-| Claude Desktop | ✓     | ✓    | ✓   |
-| Codex          | ✓     | ✓    | ✓   |
-| Cursor         | ✓     | ✓    | ✓   |
-| Gemini CLI     | ✓     | ✓    | ✓   |
-| Goose          | ✓     | ✓    | ✗   |
-| OpenCode       | ✓     | ✓    | ✓   |
-| VS Code        | ✓     | ✓    | ✓   |
-| Zed            | ✓     | ✓    | ✓   |
-
 ## What are MCP Servers?
 
 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) servers extend your coding agent's capabilities by providing tools, resources, and context. MCP servers can:
 
+- Integrate with external services (Notion, Linear, GitHub, etc.)
 - Connect to databases (PostgreSQL, MySQL, etc.)
-- Integrate with external services (GitHub, Linear, Notion)
 - Provide file system access
 - Offer specialized tools for your workflow
 
 ## Troubleshooting
-
-### Transport mismatch error
-
-If you get an error about transport not being supported, check that the agent supports your chosen transport type. For example, Goose doesn't support SSE transport.
 
 ### Server not loading
 
