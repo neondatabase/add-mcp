@@ -178,7 +178,9 @@ function listAgents(): void {
     const hasProjectSupport = supportsProjectConfig(agentType);
     const scope = hasProjectSupport ? "project, global" : "global";
 
-    console.log(`  ${TEXT}${agent.displayName}${RESET} ${DIM}(${scope})${RESET}`);
+    console.log(
+      `  ${TEXT}${agent.displayName}${RESET} ${DIM}(${scope})${RESET}`,
+    );
   }
 
   console.log();

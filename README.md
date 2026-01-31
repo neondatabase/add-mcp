@@ -43,8 +43,8 @@ npx add-mcp "node /path/to/server.js --port 3000"
 
 ### Commands
 
-| Command       | Description                                           |
-| ------------- | ----------------------------------------------------- |
+| Command       | Description                                                  |
+| ------------- | ------------------------------------------------------------ |
 | `list-agents` | List all supported coding agents with scope (project/global) |
 
 ```bash
