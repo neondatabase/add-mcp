@@ -3,9 +3,6 @@ import { dirname } from "path";
 import yaml from "js-yaml";
 import type { ConfigFile } from "../types.js";
 
-/**
- * Read a YAML config file
- */
 export function readYamlConfig(filePath: string): ConfigFile {
   if (!existsSync(filePath)) {
     return {};
@@ -17,16 +14,12 @@ export function readYamlConfig(filePath: string): ConfigFile {
   return (parsed as ConfigFile) || {};
 }
 
-/**
- * Write a YAML config file
- */
 export function writeYamlConfig(filePath: string, config: ConfigFile): void {
   const dir = dirname(filePath);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
 
-  // Read existing config and merge
   let existingConfig: ConfigFile = {};
   if (existsSync(filePath)) {
     existingConfig = readYamlConfig(filePath);
@@ -43,9 +36,6 @@ export function writeYamlConfig(filePath: string, config: ConfigFile): void {
   writeFileSync(filePath, content);
 }
 
-/**
- * Deep merge two objects
- */
 function deepMerge(target: ConfigFile, source: ConfigFile): ConfigFile {
   const result = { ...target };
 

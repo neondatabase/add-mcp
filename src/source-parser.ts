@@ -1,21 +1,13 @@
 import type { ParsedSource, SourceType } from "./types.js";
 
-/**
- * Check if input is a URL
- */
 function isUrl(input: string): boolean {
   return input.startsWith("http://") || input.startsWith("https://");
 }
 
-/**
- * Check if input looks like a command (has spaces or starts with known executables)
- */
 function isCommand(input: string): boolean {
-  // Has spaces (like "npx -y @org/package" or "node server.js --port 3000")
   if (input.includes(" ")) {
     return true;
   }
-  // Starts with known executables
   if (
     input.startsWith("npx ") ||
     input.startsWith("node ") ||
@@ -26,28 +18,18 @@ function isCommand(input: string): boolean {
   return false;
 }
 
-/**
- * Check if input looks like a package name
- * Package names can be:
- * - Simple: "package-name"
- * - Scoped: "@org/package-name"
- * - With version: "package@1.0.0" or "@org/package@1.0.0"
- */
 function isPackageName(input: string): boolean {
-  // Scoped package: @org/name or @org/name@version
+  // Scoped package
   if (input.startsWith("@") && input.includes("/")) {
     return true;
   }
-  // Simple package name (no slashes, no spaces, valid npm name chars)
+  // Simple package name
   if (/^[a-z0-9][\w.-]*(@[\w.-]+)?$/i.test(input)) {
     return true;
   }
   return false;
 }
 
-/**
- * Common TLDs to strip from hostnames
- */
 const commonTlds = new Set([
   "com",
   "org",
@@ -64,33 +46,25 @@ const commonTlds = new Set([
 ]);
 
 /**
- * Extract a clean brand/product name from a URL hostname
  * Examples:
  *   "mcp.neon.tech" -> "neon"
  *   "workos.com" -> "workos"
- *   "mcp.sentry.com" -> "sentry"
  *   "api.example.io" -> "example"
  */
 function extractBrandFromHostname(hostname: string): string {
-  // Split hostname into parts
   const parts = hostname.split(".");
 
-  // Filter out TLDs and common prefixes like "mcp", "api", "www"
   const meaningfulParts = parts.filter((part) => {
     const lower = part.toLowerCase();
-    // Skip TLDs
     if (commonTlds.has(lower)) return false;
-    // Skip common prefixes
     if (lower === "mcp" || lower === "api" || lower === "www") return false;
     return true;
   });
 
-  // Return the first meaningful part, or fallback
   if (meaningfulParts.length > 0) {
     return meaningfulParts[0]!;
   }
 
-  // Fallback: return hostname without TLD
   if (parts.length >= 2) {
     return parts[parts.length - 2]!;
   }
@@ -98,70 +72,60 @@ function extractBrandFromHostname(hostname: string): string {
   return "mcp-server";
 }
 
-/**
- * Infer server name from input
- */
 function inferName(input: string, type: SourceType): string {
   if (type === "remote") {
     try {
       const url = new URL(input);
       return extractBrandFromHostname(url.hostname);
     } catch {
-      // Fallback for malformed URLs
       return "mcp-server";
     }
   }
 
   if (type === "command") {
-    // Extract package name from command
     const parts = input.split(" ");
 
-    // Skip executable (npx, node, python, etc.)
     let startIndex = 0;
     if (parts[0] === "npx" || parts[0] === "node" || parts[0] === "python") {
       startIndex = 1;
     }
 
-    // Skip flags like -y, --yes
     for (let i = startIndex; i < parts.length; i++) {
       const part = parts[i];
       if (part && !part.startsWith("-")) {
-        // Found the package/script name
         return extractPackageName(part);
       }
     }
     return "mcp-server";
   }
 
-  // Package name
   return extractPackageName(input);
 }
 
 /**
- * Extract a clean name from a package identifier
- * "@modelcontextprotocol/server-postgres" -> "server-postgres"
- * "mcp-server-github@1.0.0" -> "mcp-server-github"
+ * Examples:
+ *   "@modelcontextprotocol/server-postgres" -> "postgres"
+ *   "mcp-server-github@1.0.0" -> "github"
  */
 function extractPackageName(input: string): string {
   let name = input;
 
-  // Remove version suffix
+  // Strip version suffix (handle both pkg@version and @org/pkg@version)
   const atIndex = name.lastIndexOf("@");
   if (atIndex > 0 && !name.startsWith("@")) {
     name = name.slice(0, atIndex);
   } else if (name.startsWith("@") && name.indexOf("@", 1) > 0) {
-    // Scoped package with version: @org/pkg@version
     const secondAt = name.indexOf("@", 1);
     name = name.slice(0, secondAt);
   }
 
-  // For scoped packages, extract just the package name part
+  // Extract package name from scoped packages
   if (name.startsWith("@") && name.includes("/")) {
     const parts = name.split("/");
     name = parts[1] || name;
   }
 
-  // Remove common prefixes for cleaner names
+  // Strip common prefixes/suffixes
   name = name.replace(/^mcp-server-/, "");
   name = name.replace(/^server-/, "");
   name = name.replace(/-mcp$/, "");
@@ -169,9 +133,6 @@ function extractPackageName(input: string): string {
   return name || "mcp-server";
 }
 
-/**
- * Parse source input and determine its type
- */
 export function parseSource(input: string): ParsedSource {
   const trimmed = input.trim();
 
@@ -207,16 +168,10 @@ export function parseSource(input: string): ParsedSource {
   };
 }
 
-/**
- * Check if the source type is a remote URL
- */
 export function isRemoteSource(parsed: ParsedSource): boolean {
   return parsed.type === "remote";
 }
 
-/**
- * Check if the source type is a local server (package or command)
- */
 export function isLocalSource(parsed: ParsedSource): boolean {
   return parsed.type === "package" || parsed.type === "command";
 }

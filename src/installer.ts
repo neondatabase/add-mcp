@@ -40,9 +40,6 @@ export interface BuildServerConfigOptions {
   transport?: TransportType;
 }
 
-/**
- * Build MCP server config from parsed source
- */
 export function buildServerConfig(
   parsed: ParsedSource,
   options: BuildServerConfigOptions = {},
@@ -55,7 +52,6 @@ export function buildServerConfig(
   }
 
   if (parsed.type === "command") {
-    // Parse command into executable and args
     const parts = parsed.value.split(" ");
     const command = parts[0]!;
     const args = parts.slice(1);
@@ -66,16 +62,12 @@ export function buildServerConfig(
     };
   }
 
-  // Package name - convert to npx command
   return {
     command: "npx",
     args: ["-y", parsed.value],
   };
 }
 
-/**
- * Get the config file path for an agent
- */
 export function getConfigPath(
   agent: AgentConfig,
   options: InstallOptions = {},
@@ -87,9 +79,6 @@ export function getConfigPath(
   return agent.configPath;
 }
 
-/**
- * Check if an MCP server is already installed for an agent
- */
 export function isServerInstalled(
   serverName: string,
   agentType: AgentType,
@@ -105,7 +94,6 @@ export function isServerInstalled(
   const config = readConfig(configPath, agent.format);
   const serversKey = agent.configKey;
 
-  // Navigate to the servers object
   const keys = serversKey.split(".");
   let current: unknown = config;
 
@@ -124,9 +112,6 @@ export function isServerInstalled(
   return false;
 }
 
-/**
- * Install an MCP server config for an agent
- */
 export function installServerForAgent(
   serverName: string,
   serverConfig: McpServerConfig,
@@ -137,25 +122,21 @@ export function installServerForAgent(
   const configPath = getConfigPath(agent, options);
 
   try {
-    // Ensure directory exists
     const dir = dirname(configPath);
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     }
 
-    // Transform config if agent requires it
     const transformedConfig = agent.transformConfig
       ? agent.transformConfig(serverName, serverConfig)
       : serverConfig;
 
-    // Build the config object
     const config = buildConfigWithKey(
       agent.configKey,
       serverName,
       transformedConfig,
     );
 
-    // Write the config
     writeConfig(configPath, config, agent.format, agent.configKey);
 
     return {
@@ -171,9 +152,6 @@ export function installServerForAgent(
   }
 }
 
-/**
- * Install an MCP server to multiple agents with per-agent routing
- */
 export function installServer(
   serverName: string,
   serverConfig: McpServerConfig,
@@ -183,7 +161,6 @@ export function installServer(
   const results = new Map<AgentType, InstallResult>();
 
   for (const agentType of agentTypes) {
-    // Determine if this agent should use local or global config
     const routing = options.routing?.get(agentType);
     const installOptions: InstallOptions = {
       local: routing === "local",
@@ -202,9 +179,6 @@ export function installServer(
   return results;
 }
 
-/**
- * Check which agents support local (project-level) config
- */
 export function getAgentsWithLocalSupport(): AgentType[] {
   return (Object.entries(agents) as [AgentType, AgentConfig][])
     .filter(([_, config]) => config.localConfigPath !== undefined)

@@ -5,9 +5,6 @@ import type { AgentConfig, AgentType, McpServerConfig } from "./types.js";
 
 const home = homedir();
 
-/**
- * Platform-specific base directories
- */
 function getPlatformPaths() {
   const platform = process.platform;
 
@@ -34,20 +31,11 @@ function getPlatformPaths() {
 
 const { appSupport, vscodePath } = getPlatformPaths();
 
-/**
- * Transform config for Goose (YAML with different structure)
- * Goose supports stdio, sse, and streamable_http transports
- * - stdio: local command-line extensions
- * - sse: Server-Sent Events for remote servers
- * - streamable_http: Streamable HTTP for remote servers (default for http)
- */
 function transformGooseConfig(
   serverName: string,
   config: McpServerConfig,
 ): unknown {
   if (config.url) {
-    // Remote server - use type field to determine transport
-    // Goose uses "sse" for SSE and "streamable_http" for HTTP
     const gooseType = config.type === "sse" ? "sse" : "streamable_http";
     return {
       name: serverName,
@@ -69,15 +57,11 @@ function transformGooseConfig(
   };
 }
 
-/**
- * Transform config for Zed (different structure)
- */
 function transformZedConfig(
   _serverName: string,
   config: McpServerConfig,
 ): unknown {
   if (config.url) {
-    // Zed remote server config
     return {
       source: "custom",
       type: config.type || "http",
@@ -94,9 +78,6 @@ function transformZedConfig(
   };
 }
 
-/**
- * Transform config for OpenCode (different structure)
- */
 function transformOpenCodeConfig(
   _serverName: string,
   config: McpServerConfig,
@@ -119,9 +100,6 @@ function transformOpenCodeConfig(
   };
 }
 
-/**
- * Transform config for Codex (TOML format, slightly different structure)
- */
 function transformCodexConfig(
   _serverName: string,
   config: McpServerConfig,
@@ -141,9 +119,6 @@ function transformCodexConfig(
   };
 }
 
-/**
- * Agent configurations
- */
 export const agents: Record<AgentType, AgentConfig> = {
   "claude-code": {
     name: "claude-code",
@@ -225,7 +200,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     projectDetectPaths: [".goose"],
     configKey: "extensions",
     format: "yaml",
-    supportedTransports: ["stdio", "http", "sse"], // Goose supports both SSE and streamable HTTP
+    supportedTransports: ["stdio", "http", "sse"],
     detectGlobalInstall: async () => {
       return existsSync(join(home, ".config", "goose"));
     },
@@ -286,55 +261,35 @@ export const agents: Record<AgentType, AgentConfig> = {
   },
 };
 
-/**
- * Get all agent types
- */
 export function getAgentTypes(): AgentType[] {
   return Object.keys(agents) as AgentType[];
 }
 
-/**
- * Get agent config by type
- */
 export function getAgentConfig(type: AgentType): AgentConfig {
   return agents[type];
 }
 
-/**
- * Check if an agent supports project-level (local) config
- */
 export function supportsProjectConfig(agentType: AgentType): boolean {
   return agents[agentType].localConfigPath !== undefined;
 }
 
-/**
- * Get agents that support project-level config
- */
 export function getProjectCapableAgents(): AgentType[] {
   return (Object.keys(agents) as AgentType[]).filter((type) =>
     supportsProjectConfig(type),
   );
 }
 
-/**
- * Get agents that only support global config
- */
 export function getGlobalOnlyAgents(): AgentType[] {
   return (Object.keys(agents) as AgentType[]).filter(
     (type) => !supportsProjectConfig(type),
   );
 }
 
-/**
- * Detect agents based on project-level files in the given directory
- * Only checks agents that support project config
- */
 export function detectProjectAgents(cwd?: string): AgentType[] {
   const dir = cwd || process.cwd();
   const detected: AgentType[] = [];
 
   for (const [type, config] of Object.entries(agents)) {
-    // Skip global-only agents
     if (!config.localConfigPath) continue;
 
     for (const detectPath of config.projectDetectPaths) {
@@ -348,15 +303,10 @@ export function detectProjectAgents(cwd?: string): AgentType[] {
   return detected;
 }
 
-/**
- * Detect which agents are installed globally
- * Only checks global-only agents (agents without project support)
- */
 export async function detectGlobalOnlyAgents(): Promise<AgentType[]> {
   const detected: AgentType[] = [];
 
   for (const [type, config] of Object.entries(agents)) {
-    // Only check global-only agents
     if (config.localConfigPath) continue;
 
     if (await config.detectGlobalInstall()) {
@@ -367,9 +317,6 @@ export async function detectGlobalOnlyAgents(): Promise<AgentType[]> {
   return detected;
 }
 
-/**
- * Detect all globally installed agents (for use with -g flag)
- */
 export async function detectAllGlobalAgents(): Promise<AgentType[]> {
   const detected: AgentType[] = [];
 
@@ -382,9 +329,6 @@ export async function detectAllGlobalAgents(): Promise<AgentType[]> {
   return detected;
 }
 
-/**
- * Check if an agent supports a specific transport type
- */
 export function isTransportSupported(
   agentType: AgentType,
   transport: "stdio" | "sse" | "http",

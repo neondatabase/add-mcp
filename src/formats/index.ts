@@ -5,9 +5,6 @@ import { readTomlConfig, writeTomlConfig } from "./toml.js";
 
 export { setNestedValue } from "./json.js";
 
-/**
- * Read a config file based on format
- */
 export function readConfig(filePath: string, format: ConfigFormat): ConfigFile {
   switch (format) {
     case "json":
@@ -21,9 +18,6 @@ export function readConfig(filePath: string, format: ConfigFormat): ConfigFile {
   }
 }
 
-/**
- * Write a config file based on format
- */
 export function writeConfig(
   filePath: string,
   config: ConfigFile,
@@ -45,9 +39,6 @@ export function writeConfig(
   }
 }
 
-/**
- * Build a config object with nested key
- */
 export function buildConfigWithKey(
   configKey: string,
   serverName: string,

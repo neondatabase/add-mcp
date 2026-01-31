@@ -1,6 +1,3 @@
-/**
- * Supported agent types
- */
 export type AgentType =
   | "claude-code"
   | "claude-desktop"
@@ -12,21 +9,12 @@ export type AgentType =
   | "vscode"
   | "zed";
 
-/**
- * Aliases that map to canonical agent types
- */
 export const agentAliases: Record<string, AgentType> = {
   "github-copilot": "vscode",
 };
 
-/**
- * Config file format types
- */
 export type ConfigFormat = "json" | "yaml" | "toml";
 
-/**
- * Agent configuration
- */
 export interface AgentConfig {
   /** Internal name */
   name: string;
@@ -50,14 +38,8 @@ export interface AgentConfig {
   transformConfig?: (serverName: string, config: McpServerConfig) => unknown;
 }
 
-/**
- * Parsed source input types
- */
 export type SourceType = "remote" | "package" | "command";
 
-/**
- * Parsed source result
- */
 export interface ParsedSource {
   type: SourceType;
   /** For remote: the URL; for package: package name; for command: full command */
@@ -66,17 +48,8 @@ export interface ParsedSource {
   inferredName: string;
 }
 
-/**
- * Transport types for MCP servers
- * - stdio: Local process communication via stdin/stdout
- * - sse: Server-Sent Events transport (HTTP GET for events + POST for messages)
- * - http: Streamable HTTP transport (modern standard, single HTTP endpoint)
- */
 export type TransportType = "sse" | "http";
 
-/**
- * MCP server configuration (standard format)
- */
 export interface McpServerConfig {
   /** For remote servers */
   type?: TransportType;
@@ -88,9 +61,6 @@ export interface McpServerConfig {
   env?: Record<string, string>;
 }
 
-/**
- * Generic config file content
- */
 export interface ConfigFile {
   [key: string]: unknown;
 }
