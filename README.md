@@ -118,13 +118,13 @@ MCP servers can be installed to any of these agents:
 | -------------- | ---------------- | ----------------------- | ----------------------------------------------------------------- |
 | Claude Code    | `claude-code`    | `.mcp.json`             | `~/.claude.json`                                                  |
 | Claude Desktop | `claude-desktop` | -                       | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Codex          | `codex`          | -                       | `~/.codex/config.toml`                                            |
+| Codex          | `codex`          | `.codex/config.toml`    | `~/.codex/config.toml`                                            |
 | Cursor         | `cursor`         | `.cursor/mcp.json`      | `~/.cursor/mcp.json`                                              |
 | Gemini CLI     | `gemini-cli`     | `.gemini/settings.json` | `~/.gemini/settings.json`                                         |
 | Goose          | `goose`          | `.goose/config.yaml`    | `~/.config/goose/config.yaml`                                     |
 | OpenCode       | `opencode`       | `.opencode.json`        | `~/.config/opencode/opencode.json`                                |
 | VS Code        | `vscode`         | `.vscode/mcp.json`      | `~/Library/Application Support/Code/User/mcp.json`                |
-| Zed            | `zed`            | -                       | `~/.config/zed/settings.json`                                     |
+| Zed            | `zed`            | `.zed/settings.json`    | `~/Library/Application Support/Zed/settings.json`                 |
 
 **Aliases:** `github-copilot` → `vscode`
 

@@ -154,7 +154,8 @@ export const agents: Record<AgentType, AgentConfig> = {
       process.env.CODEX_HOME || join(home, ".codex"),
       "config.toml",
     ),
-    projectDetectPaths: [], // Global only - no project support
+    localConfigPath: ".codex/config.toml",
+    projectDetectPaths: [".codex"],
     configKey: "mcp_servers",
     format: "toml",
     supportedTransports: ["stdio", "http", "sse"],
@@ -240,22 +241,20 @@ export const agents: Record<AgentType, AgentConfig> = {
     name: "zed",
     displayName: "Zed",
     configPath:
-      process.platform === "win32"
-        ? join(
-            process.env.APPDATA || join(home, "AppData", "Roaming"),
-            "Zed",
-            "settings.json",
-          )
-        : join(home, ".config", "zed", "settings.json"),
-    projectDetectPaths: [], // Global only - no project support
+      process.platform === "darwin" || process.platform === "win32"
+        ? join(appSupport, "Zed", "settings.json")
+        : join(appSupport, "zed", "settings.json"),
+    localConfigPath: ".zed/settings.json",
+    projectDetectPaths: [".zed"],
     configKey: "context_servers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
     detectGlobalInstall: async () => {
-      return (
-        existsSync(join(home, ".config", "zed")) ||
-        existsSync(join(process.env.APPDATA || "", "Zed"))
-      );
+      const configDir =
+        process.platform === "darwin" || process.platform === "win32"
+          ? join(appSupport, "Zed")
+          : join(appSupport, "zed");
+      return existsSync(configDir);
     },
     transformConfig: transformZedConfig,
   },
