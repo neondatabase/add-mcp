@@ -1,16 +1,14 @@
-Copyright (2025) Neon Database, Inc.
+Copyright (2026) Databricks, Inc.
 
-This Software includes software developed at Neon Database (https://neon.tech/) and its use is subject to the included LICENSE file.
+This Software includes software developed at Databricks (https://www.databricks.com/) and its use is subject to the included LICENSE file.
 
-This Software contains code from the following open source projects:
+________________
+
+This Software contains code from the following open source projects, licensed under the MIT license (https://opensource.org/license/mit):
 
 @clack/prompts - https://github.com/bombshell-dev/clack
 Copyright Nate Moore.  All rights reserved.
 License - https://github.com/bombshell-dev/clack/blob/main/LICENSE
-
-@iarna/toml - https://github.com/iarna/iarna-toml
-Copyright (c) 2016 Rebecca Turner.  All rights reserved.
-License - https://github.com/iarna/iarna-toml/blob/master/LICENSE
 
 chalk - https://github.com/chalk/chalk
 Copyright Sindre Sorhus.  All rights reserved.
@@ -43,8 +41,18 @@ License - https://github.com/egoist/tsup/blob/main/LICENSE
 tsx - https://github.com/privatenumber/tsx
 Copyright Hiroki Osame.  All rights reserved.
 License - https://github.com/privatenumber/tsx/blob/master/LICENSE
+________________
+This Software contains code from the following open source projects, licensed under the ISC license (https://opensource.org/license/isc-license-txt):
+
+@iarna/toml - https://github.com/iarna/iarna-toml
+Copyright (c) 2016 Rebecca Turner.  All rights reserved.
+License - https://github.com/iarna/iarna-toml/blob/master/LICENSE
+
+________________
+This Software contains code from the following open source projects, licensed under the Apache 2.0 license (https://www.apache.org/licenses/LICENSE-2.0):
 
 TypeScript - https://github.com/microsoft/TypeScript
 Copyright Microsoft Corporation.  All rights reserved.
 License - https://github.com/microsoft/TypeScript/blob/main/LICENSE.txt
+
 
