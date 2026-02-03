@@ -7,7 +7,7 @@ Supports **OpenCode**, **Claude Code**, **Codex**, **Cursor**, and [5 more](#sup
 ## Install an MCP Server
 
 ```bash
-npx add-mcp https://mcp.example.com/sse
+npx add-mcp https://mcp.example.com/mcp
 ```
 
 ### Usage Examples
