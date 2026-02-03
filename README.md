@@ -19,6 +19,9 @@ npx add-mcp https://mcp.example.com/mcp
 # Remote MCP server (SSE transport)
 npx add-mcp https://mcp.example.com/sse --transport sse
 
+# Remote MCP server with auth header
+npx add-mcp https://mcp.example.com/mcp --header "Authorization: Bearer $TOKEN"
+
 # npm package (runs via npx)
 npx add-mcp @modelcontextprotocol/server-postgres
 
@@ -55,6 +58,7 @@ npx add-mcp mcp-server-github --all -g -y
 | `-a, --agent <agent>`    | Target specific agents (e.g., `cursor`, `claude-code`). Can be repeated. |
 | `-t, --transport <type>` | Transport type for remote servers: `http` (default), `sse`               |
 | `--type <type>`          | Alias for `--transport`                                                  |
+| `--header <header>`      | HTTP header for remote servers (repeatable, `Key: Value`)                |
 | `-n, --name <name>`      | Server name (auto-inferred if not provided)                              |
 | `-y, --yes`              | Skip all confirmation prompts                                            |
 | `--all`                  | Install to all agents                                                    |
@@ -109,6 +113,14 @@ The CLI automatically detects agents based on your environment:
 | **SSE**   | `--transport sse`  | Server-Sent Events (deprecated by MCP but still used) |
 
 Local servers (npm packages, commands) always use **stdio** transport.
+
+## HTTP Headers
+
+Use `--header` to pass custom headers for remote servers. The flag can be repeated.
+If you explicitly select agents that don't support headers, the install will error. Auto-detected installs skip unsupported agents with a warning.
+
+Agents that support headers: Claude Code, Claude Desktop, Codex, Cursor, Gemini CLI, OpenCode, VS Code, Zed.
+Agents that do not support headers: Goose.
 
 ## Supported Agents
 

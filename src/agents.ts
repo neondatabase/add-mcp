@@ -129,6 +129,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     configKey: "mcpServers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
+    supportsHeaders: true,
     detectGlobalInstall: async () => {
       return existsSync(join(home, ".claude"));
     },
@@ -142,6 +143,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     configKey: "mcpServers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
+    supportsHeaders: true,
     detectGlobalInstall: async () => {
       return existsSync(join(appSupport, "Claude"));
     },
@@ -159,6 +161,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     configKey: "mcp_servers",
     format: "toml",
     supportedTransports: ["stdio", "http", "sse"],
+    supportsHeaders: true,
     detectGlobalInstall: async () => {
       return existsSync(join(home, ".codex"));
     },
@@ -174,6 +177,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     configKey: "mcpServers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
+    supportsHeaders: true,
     detectGlobalInstall: async () => {
       return existsSync(join(home, ".cursor"));
     },
@@ -188,6 +192,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     configKey: "mcpServers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
+    supportsHeaders: true,
     detectGlobalInstall: async () => {
       return existsSync(join(home, ".gemini"));
     },
@@ -202,6 +207,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     configKey: "extensions",
     format: "yaml",
     supportedTransports: ["stdio", "http", "sse"],
+    supportsHeaders: false,
     detectGlobalInstall: async () => {
       return existsSync(join(home, ".config", "goose"));
     },
@@ -217,6 +223,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     configKey: "mcp",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
+    supportsHeaders: true,
     detectGlobalInstall: async () => {
       return existsSync(join(home, ".config", "opencode"));
     },
@@ -232,6 +239,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     configKey: "servers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
+    supportsHeaders: true,
     detectGlobalInstall: async () => {
       return existsSync(vscodePath);
     },
@@ -249,6 +257,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     configKey: "context_servers",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
+    supportsHeaders: true,
     detectGlobalInstall: async () => {
       const configDir =
         process.platform === "darwin" || process.platform === "win32"

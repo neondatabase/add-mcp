@@ -32,6 +32,8 @@ export interface AgentConfig {
   format: ConfigFormat;
   /** Supported transport types for this agent */
   supportedTransports: ("stdio" | "sse" | "http")[];
+  /** Whether agent supports configuring HTTP headers for remote servers */
+  supportsHeaders: boolean;
   /** Function to detect if agent is installed globally */
   detectGlobalInstall: () => Promise<boolean>;
   /** Optional function to transform server config to agent-specific format */

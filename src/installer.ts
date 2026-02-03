@@ -33,6 +33,8 @@ export interface InstallResult {
 export interface BuildServerConfigOptions {
   /** Transport type for remote servers (default: http) */
   transport?: TransportType;
+  /** HTTP headers for remote servers */
+  headers?: Record<string, string>;
 }
 
 export function buildServerConfig(
@@ -40,10 +42,16 @@ export function buildServerConfig(
   options: BuildServerConfigOptions = {},
 ): McpServerConfig {
   if (parsed.type === "remote") {
-    return {
+    const config: McpServerConfig = {
       type: options.transport ?? "http",
       url: parsed.value,
     };
+
+    if (options.headers && Object.keys(options.headers).length > 0) {
+      config.headers = options.headers;
+    }
+
+    return config;
   }
 
   if (parsed.type === "command") {

@@ -118,6 +118,7 @@ interface Options {
   name?: string;
   transport?: string;
   type?: string;
+  header?: string[];
   yes?: boolean;
   all?: boolean;
 }
@@ -127,6 +128,36 @@ interface Options {
  */
 function collect(value: string, previous: string[]): string[] {
   return previous.concat([value]);
+}
+
+interface ParsedHeadersResult {
+  headers: Record<string, string>;
+  invalid: string[];
+}
+
+function parseHeaders(values: string[]): ParsedHeadersResult {
+  const headers: Record<string, string> = {};
+  const invalid: string[] = [];
+
+  for (const entry of values) {
+    const separatorIndex = entry.indexOf(":");
+    if (separatorIndex <= 0) {
+      invalid.push(entry);
+      continue;
+    }
+
+    const key = entry.slice(0, separatorIndex).trim();
+    const value = entry.slice(separatorIndex + 1).trim();
+
+    if (!key || !value) {
+      invalid.push(entry);
+      continue;
+    }
+
+    headers[key] = value;
+  }
+
+  return { headers, invalid };
 }
 
 program
@@ -150,6 +181,12 @@ program
     "Transport type for remote servers (http, sse)",
   )
   .option("--type <type>", "Alias for --transport")
+  .option(
+    "--header <header>",
+    "HTTP header for remote servers (repeatable, 'Key: Value')",
+    collect,
+    [],
+  )
   .option("-y, --yes", "Skip confirmation prompts")
   .option("--all", "Install to all agents")
   .action(async (target: string | undefined, options: Options) => {
@@ -229,8 +266,24 @@ async function main(target: string | undefined, options: Options) {
   // Parse the source
   spinner.start("Parsing source...");
   const parsed = parseSource(target);
-  const sourceType = isRemoteSource(parsed) ? "remote" : "local";
+  const isRemote = isRemoteSource(parsed);
+  const sourceType = isRemote ? "remote" : "local";
   spinner.stop(`Source: ${chalk.cyan(parsed.value)} (${sourceType})`);
+
+  const headerValues = options.header ?? [];
+  const headerResult = parseHeaders(headerValues);
+  if (headerResult.invalid.length > 0) {
+    p.log.error(
+      `Invalid --header value(s): ${headerResult.invalid.join(", ")}. Use "Key: Value" format.`,
+    );
+    process.exit(1);
+  }
+
+  const headerKeys = Object.keys(headerResult.headers);
+  const hasHeaderValues = headerKeys.length > 0;
+  if (hasHeaderValues && !isRemote) {
+    p.log.warn("--header is only used for remote URLs, ignoring");
+  }
 
   // Determine server name
   const serverName = options.name || parsed.inferredName;
@@ -257,11 +310,15 @@ async function main(target: string | undefined, options: Options) {
   // Build server config
   const serverConfig = buildServerConfig(parsed, {
     transport: resolvedTransport,
+    headers: isRemote && hasHeaderValues ? headerResult.headers : undefined,
   });
 
   // Determine target agents
   let targetAgents: AgentType[];
   const allAgentTypes = getAgentTypes();
+  const hasExplicitAgentFlags =
+    (options.agent && options.agent.length > 0) || options.all === true;
+  let selectedViaPrompt = false;
 
   // Track which agents should use local vs global config
   // This will be populated based on detection and user choices
@@ -357,6 +414,7 @@ async function main(target: string | undefined, options: Options) {
           process.exit(0);
         }
 
+        selectedViaPrompt = true;
         targetAgents = selected as AgentType[];
       }
     } else if (detectedAgents.length === 1 || options.yes) {
@@ -393,6 +451,7 @@ async function main(target: string | undefined, options: Options) {
         process.exit(0);
       }
 
+      selectedViaPrompt = true;
       targetAgents = selected as AgentType[];
     }
   }
@@ -430,6 +489,42 @@ async function main(target: string | undefined, options: Options) {
         `The following agents don't support ${requiredTransport} transport: ${unsupportedNames}`,
       );
       process.exit(1);
+    }
+  }
+
+  const hasHeadersForRemote = isRemote && hasHeaderValues;
+  if (hasHeadersForRemote) {
+    const unsupportedHeaderAgents = targetAgents.filter(
+      (a) => !agents[a].supportsHeaders,
+    );
+
+    if (unsupportedHeaderAgents.length > 0) {
+      const unsupportedNames = unsupportedHeaderAgents
+        .map((a) => agents[a].displayName)
+        .join(", ");
+      const hasExplicitAgentSelection =
+        hasExplicitAgentFlags || selectedViaPrompt;
+
+      if (hasExplicitAgentSelection) {
+        p.log.error(
+          `The following agents don't support HTTP headers: ${unsupportedNames}`,
+        );
+        process.exit(1);
+      }
+
+      const supportedAgents = targetAgents.filter(
+        (a) => agents[a].supportsHeaders,
+      );
+
+      if (supportedAgents.length === 0) {
+        p.log.error("No selected agents support HTTP headers");
+        process.exit(1);
+      }
+
+      p.log.warn(
+        `Skipping agents that don't support HTTP headers: ${unsupportedNames}`,
+      );
+      targetAgents = supportedAgents;
     }
   }
 

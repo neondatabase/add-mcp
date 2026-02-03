@@ -62,6 +62,21 @@ test("buildServerConfig - remote URL defaults to http", () => {
   assert.strictEqual(config.command, undefined);
 });
 
+test("buildServerConfig - remote URL with headers", () => {
+  const parsed = parseSource("https://mcp.example.com/api");
+  const config = buildServerConfig(parsed, {
+    headers: {
+      Authorization: "Bearer token",
+      "X-Custom": "value",
+    },
+  });
+
+  assert.deepStrictEqual(config.headers, {
+    Authorization: "Bearer token",
+    "X-Custom": "value",
+  });
+});
+
 test("buildServerConfig - remote URL with path", () => {
   const parsed = parseSource("https://api.company.com/mcp/v1");
   const config = buildServerConfig(parsed);
