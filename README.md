@@ -2,12 +2,18 @@
 
 Add MCP servers to your favorite coding agents with a single command.
 
-Supports **OpenCode**, **Claude Code**, **Codex**, **Cursor**, and [5 more](#supported-agents).
+Supports **Claude Code**, **Codex**, **Cursor**, **OpenCode**, **VSCode** and [4 more](#supported-agents).
 
 ## Install an MCP Server
 
 ```bash
-npx add-mcp https://mcp.example.com/mcp
+npx add-mcp url | package name [options]
+```
+
+Example installing the Context7 MCP server:
+
+```bash
+npx add-mcp https://mcp.context7.com/mcp
 ```
 
 ### Usage Examples

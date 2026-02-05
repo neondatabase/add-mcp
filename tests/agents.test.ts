@@ -18,6 +18,7 @@ import {
   getGlobalOnlyAgents,
   detectProjectAgents,
   isTransportSupported,
+  buildAgentSelectionChoices,
 } from "../src/agents.js";
 import type { AgentType } from "../src/types.js";
 
@@ -340,6 +341,40 @@ test("Global-only agents have empty projectDetectPaths", () => {
       `${type} should have empty projectDetectPaths`,
     );
   }
+});
+
+// ============================================
+// Agent Selection Ordering Tests
+// ============================================
+
+test("buildAgentSelectionChoices orders detected, last selected, then remaining", () => {
+  const availableAgents: AgentType[] = ["cursor", "vscode", "opencode", "zed"];
+  const detectedAgents: AgentType[] = ["cursor", "vscode"];
+  const lastSelected = ["zed", "cursor"];
+  const routing = new Map<AgentType, "local" | "global">([
+    ["cursor", "local"],
+    ["vscode", "local"],
+  ]);
+
+  const result = buildAgentSelectionChoices({
+    availableAgents,
+    detectedAgents,
+    agentRouting: routing,
+    lastSelected,
+  });
+
+  const orderedValues = result.choices.map((choice) => choice.value);
+  assert.deepStrictEqual(orderedValues, [
+    "cursor",
+    "vscode",
+    "zed",
+    "opencode",
+  ]);
+
+  assert.deepStrictEqual(result.initialValues, ["cursor", "vscode"]);
+  const zedChoice = result.choices.find((choice) => choice.value === "zed");
+  assert.ok(zedChoice);
+  assert.ok(zedChoice.hint.includes("selected last time"));
 });
 
 // Cleanup and summary

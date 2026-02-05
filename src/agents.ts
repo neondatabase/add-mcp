@@ -340,6 +340,61 @@ export function isTransportSupported(
   return agents[agentType].supportedTransports.includes(transport);
 }
 
+export function buildAgentSelectionChoices(options: {
+  availableAgents: AgentType[];
+  detectedAgents: AgentType[];
+  agentRouting: Map<AgentType, "local" | "global">;
+  lastSelected?: string[];
+}): {
+  choices: Array<{ value: AgentType; label: string; hint: string }>;
+  initialValues: AgentType[];
+} {
+  const { availableAgents, detectedAgents, agentRouting, lastSelected } =
+    options;
+  const detectedSet = new Set(detectedAgents);
+  const validLastSelected =
+    lastSelected?.filter(
+      (agent) =>
+        availableAgents.includes(agent as AgentType) &&
+        !detectedSet.has(agent as AgentType),
+    ) ?? [];
+
+  const remainingAgents = availableAgents.filter(
+    (agent) =>
+      !detectedSet.has(agent) &&
+      !validLastSelected.includes(agent as AgentType),
+  );
+
+  const orderedAgents = [
+    ...detectedAgents,
+    ...(validLastSelected as AgentType[]),
+    ...remainingAgents,
+  ];
+
+  const choices = orderedAgents.map((agentType) => {
+    const routing = agentRouting.get(agentType);
+    const baseHint =
+      routing === "local"
+        ? "project"
+        : routing === "global"
+          ? "global"
+          : shortenPath(agents[agentType].configPath);
+    const lastSelectedHint = validLastSelected.includes(agentType)
+      ? "selected last time"
+      : "";
+    const hint = lastSelectedHint
+      ? `${baseHint} · ${lastSelectedHint}`
+      : baseHint;
+    return {
+      value: agentType,
+      label: agents[agentType].displayName,
+      hint,
+    };
+  });
+
+  return { choices, initialValues: detectedAgents };
+}
+
 export async function promptForAgents(
   message: string,
   choices: Array<{ value: AgentType; label: string; hint?: string }>,
@@ -410,16 +465,14 @@ export async function selectAgentsInteractive(
       .join(", ");
     selectOptions.push({
       value: "previous",
-      label: "Same as last time (Recommended)",
+      label: "Same as last time",
       hint: agentNames,
     });
   }
 
   selectOptions.push({
     value: "all",
-    label: hasPrevious
-      ? "All available agents"
-      : "All available agents (Recommended)",
+    label: hasPrevious ? "All available agents" : "All available agents",
     hint: `Install to all ${availableAgents.length} available agents`,
   });
 

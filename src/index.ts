@@ -14,8 +14,10 @@ import {
   detectAllGlobalAgents,
   supportsProjectConfig,
   getProjectCapableAgents,
+  buildAgentSelectionChoices,
   selectAgentsInteractive,
 } from "./agents.js";
+import { getLastSelectedAgents } from "./mcp-lock.js";
 import { parseSource, isRemoteSource } from "./source-parser.js";
 import { buildServerConfig, installServer } from "./installer.js";
 
@@ -403,8 +405,8 @@ async function main(target: string | undefined, options: Options) {
 
         p.log.warn(
           options.global
-            ? "No coding agents detected. You can still install MCP servers."
-            : "No agents detected in this project. You can still install MCP servers.",
+            ? "No coding agents detected."
+            : "No agents detected in this project.",
         );
 
         const selected = await selectAgentsInteractive(availableAgents, {
@@ -422,33 +424,35 @@ async function main(target: string | undefined, options: Options) {
           agentRouting.set(agent, options.global ? "global" : "local");
         }
       }
-    } else if (detectedAgents.length === 1 || options.yes) {
+    } else if (options.yes) {
       targetAgents = detectedAgents;
       const agentNames = detectedAgents
         .map((a) => chalk.cyan(agents[a].displayName))
         .join(", ");
       p.log.info(`Installing to: ${agentNames}`);
     } else {
-      const agentChoices = detectedAgents.map((a) => {
-        const routing = agentRouting.get(a);
-        const hint =
-          routing === "local"
-            ? "project"
-            : routing === "global"
-              ? "global"
-              : shortenPath(agents[a].configPath);
-        return {
-          value: a,
-          label: agents[a].displayName,
-          hint,
-        };
-      });
+      const availableAgents = options.global
+        ? allAgentTypes
+        : getProjectCapableAgents();
+      let lastSelected: string[] | undefined;
+      try {
+        lastSelected = await getLastSelectedAgents();
+      } catch {
+        // Ignore lock read errors
+      }
+      const { choices: agentChoices, initialValues } =
+        buildAgentSelectionChoices({
+          availableAgents,
+          detectedAgents,
+          agentRouting,
+          lastSelected,
+        });
 
       const selected = await p.multiselect({
         message: "Select agents to install to",
         options: agentChoices,
         required: true,
-        initialValues: detectedAgents,
+        initialValues,
       });
 
       if (p.isCancel(selected)) {
@@ -458,6 +462,9 @@ async function main(target: string | undefined, options: Options) {
 
       selectedViaPrompt = true;
       targetAgents = selected as AgentType[];
+      for (const agent of targetAgents) {
+        agentRouting.set(agent, options.global ? "global" : "local");
+      }
     }
   }
 
