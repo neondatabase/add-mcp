@@ -104,32 +104,32 @@ test("supportsProjectConfig - returns true for project-capable agents", () => {
   assert.strictEqual(supportsProjectConfig("vscode"), true);
   assert.strictEqual(supportsProjectConfig("opencode"), true);
   assert.strictEqual(supportsProjectConfig("gemini-cli"), true);
-  assert.strictEqual(supportsProjectConfig("goose"), true);
   assert.strictEqual(supportsProjectConfig("codex"), true);
   assert.strictEqual(supportsProjectConfig("zed"), true);
 });
 
 test("supportsProjectConfig - returns false for global-only agents", () => {
   assert.strictEqual(supportsProjectConfig("claude-desktop"), false);
+  assert.strictEqual(supportsProjectConfig("goose"), false);
 });
 
-test("getProjectCapableAgents returns 8 agents", () => {
+test("getProjectCapableAgents returns 7 agents", () => {
   const projectAgents = getProjectCapableAgents();
-  assert.strictEqual(projectAgents.length, 8);
+  assert.strictEqual(projectAgents.length, 7);
   assert.ok(projectAgents.includes("claude-code"));
   assert.ok(projectAgents.includes("cursor"));
   assert.ok(projectAgents.includes("vscode"));
   assert.ok(projectAgents.includes("opencode"));
   assert.ok(projectAgents.includes("gemini-cli"));
-  assert.ok(projectAgents.includes("goose"));
   assert.ok(projectAgents.includes("codex"));
   assert.ok(projectAgents.includes("zed"));
 });
 
-test("getGlobalOnlyAgents returns 1 agents", () => {
+test("getGlobalOnlyAgents returns 2 agents", () => {
   const globalAgents = getGlobalOnlyAgents();
-  assert.strictEqual(globalAgents.length, 1);
+  assert.strictEqual(globalAgents.length, 2);
   assert.ok(globalAgents.includes("claude-desktop"));
+  assert.ok(globalAgents.includes("goose"));
 });
 
 test("Project + global-only agents equals all agents", () => {
@@ -209,14 +209,6 @@ test("detectProjectAgents - detects .gemini directory", () => {
   assert.ok(detected.includes("gemini-cli"));
 });
 
-test("detectProjectAgents - detects .goose directory", () => {
-  const tempDir = createTempDir();
-  mkdirSync(join(tempDir, ".goose"));
-
-  const detected = detectProjectAgents(tempDir);
-  assert.ok(detected.includes("goose"));
-});
-
 test("detectProjectAgents - detects .codex directory", () => {
   const tempDir = createTempDir();
   mkdirSync(join(tempDir, ".codex"));
@@ -251,9 +243,11 @@ test("detectProjectAgents - does not detect global-only agents", () => {
   // Even if we create directories that might look like agent configs,
   // global-only agents should never be detected via project detection
   mkdirSync(join(tempDir, ".cursor"));
+  mkdirSync(join(tempDir, ".goose"));
 
   const detected = detectProjectAgents(tempDir);
   assert.ok(!detected.includes("claude-desktop"));
+  assert.ok(!detected.includes("goose"));
 });
 
 // ============================================

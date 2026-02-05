@@ -14,6 +14,7 @@ import {
   detectAllGlobalAgents,
   supportsProjectConfig,
   getProjectCapableAgents,
+  selectAgentsInteractive,
 } from "./agents.js";
 import { parseSource, isRemoteSource } from "./source-parser.js";
 import { buildServerConfig, installServer } from "./installer.js";
@@ -377,36 +378,37 @@ async function main(target: string | undefined, options: Options) {
 
     if (detectedAgents.length === 0) {
       if (options.yes) {
-        // No agents detected + --yes: install to all project-capable agents
-        targetAgents = getProjectCapableAgents();
-        for (const agent of targetAgents) {
-          agentRouting.set(agent, "local");
-        }
-        p.log.info(
-          `Installing to ${targetAgents.length} project-capable agents (none detected)`,
-        );
-      } else {
-        // Interactive mode: error if no agents detected in project
-        if (!options.global) {
-          p.log.error(
-            "No agents detected in this project. Use --global to install globally, or run in a project with agent config files.",
+        if (options.global) {
+          targetAgents = allAgentTypes;
+          for (const agent of targetAgents) {
+            agentRouting.set(agent, "global");
+          }
+          p.log.info(
+            `Installing to ${targetAgents.length} agents globally (none detected)`,
           );
-          process.exit(1);
+        } else {
+          // No agents detected + --yes: install to all project-capable agents
+          targetAgents = getProjectCapableAgents();
+          for (const agent of targetAgents) {
+            agentRouting.set(agent, "local");
+          }
+          p.log.info(
+            `Installing to ${targetAgents.length} project-capable agents (none detected)`,
+          );
         }
+      } else {
+        const availableAgents = options.global
+          ? allAgentTypes
+          : getProjectCapableAgents();
 
         p.log.warn(
-          "No coding agents detected. You can still install MCP servers.",
+          options.global
+            ? "No coding agents detected. You can still install MCP servers."
+            : "No agents detected in this project. You can still install MCP servers.",
         );
 
-        const allAgentChoices = allAgentTypes.map((type) => ({
-          value: type,
-          label: agents[type].displayName,
-        }));
-
-        const selected = await p.multiselect({
-          message: "Select agents to install to",
-          options: allAgentChoices,
-          required: true,
+        const selected = await selectAgentsInteractive(availableAgents, {
+          global: options.global,
         });
 
         if (p.isCancel(selected)) {
@@ -416,6 +418,9 @@ async function main(target: string | undefined, options: Options) {
 
         selectedViaPrompt = true;
         targetAgents = selected as AgentType[];
+        for (const agent of targetAgents) {
+          agentRouting.set(agent, options.global ? "global" : "local");
+        }
       }
     } else if (detectedAgents.length === 1 || options.yes) {
       targetAgents = detectedAgents;

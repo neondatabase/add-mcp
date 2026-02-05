@@ -338,7 +338,7 @@ test("E2E: Install to Goose (YAML format, transformed) - remote server (http)", 
     "streamable_http",
   );
   assert.strictEqual(
-    (transformed as Record<string, unknown>).url,
+    (transformed as Record<string, unknown>).uri,
     "https://mcp.example.com/mcp",
   );
   assert.strictEqual((transformed as Record<string, unknown>).enabled, true);
@@ -359,7 +359,7 @@ test("E2E: Install to Goose (YAML format, transformed) - remote server (sse)", (
   );
   assert.strictEqual((transformed as Record<string, unknown>).type, "sse");
   assert.strictEqual(
-    (transformed as Record<string, unknown>).url,
+    (transformed as Record<string, unknown>).uri,
     "https://mcp.example.com/sse",
   );
   assert.strictEqual((transformed as Record<string, unknown>).enabled, true);

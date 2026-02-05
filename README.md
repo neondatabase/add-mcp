@@ -100,8 +100,8 @@ The CLI automatically detects agents based on your environment:
 
 **No agents detected:**
 
-- Interactive mode: Shows error with guidance to use `--global` or run in a project
-- With `--yes`: Installs to all project-capable agents
+- Interactive mode: Shows an agent selector (all available, last selection, or pick specific)
+- With `--yes`: Installs to all project-capable agents (project mode) or all global-capable agents (global mode)
 
 ## Transport Types
 

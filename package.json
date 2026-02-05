@@ -1,6 +1,6 @@
 {
   "name": "add-mcp",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Add MCP servers to your favorite coding agents with a single command.",
   "author": "Andre Landgraf <andre@neon.tech>",
   "license": "Apache-2.0",
@@ -16,8 +16,8 @@
     "fmt": "prettier --write .",
     "build": "tsup src/index.ts --format esm --dts --clean",
     "dev": "tsx src/index.ts",
-    "test": "tsx tests/source-parser.test.ts && tsx tests/agents.test.ts && tsx tests/installer.test.ts && tsx tests/e2e/install.test.ts",
-    "test:unit": "tsx tests/source-parser.test.ts && tsx tests/agents.test.ts && tsx tests/installer.test.ts",
+    "test": "tsx tests/source-parser.test.ts && tsx tests/agents.test.ts && tsx tests/mcp-lock.test.ts && tsx tests/installer.test.ts && tsx tests/e2e/install.test.ts",
+    "test:unit": "tsx tests/source-parser.test.ts && tsx tests/agents.test.ts && tsx tests/mcp-lock.test.ts && tsx tests/installer.test.ts",
     "test:e2e": "tsx tests/e2e/install.test.ts",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"

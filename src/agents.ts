@@ -1,9 +1,18 @@
+import * as p from "@clack/prompts";
 import { homedir } from "os";
 import { join } from "path";
 import { existsSync } from "fs";
 import type { AgentConfig, AgentType, McpServerConfig } from "./types.js";
+import { getLastSelectedAgents, saveSelectedAgents } from "./mcp-lock.js";
 
 const home = homedir();
+
+function shortenPath(fullPath: string): string {
+  if (fullPath.startsWith(home)) {
+    return fullPath.replace(home, "~");
+  }
+  return fullPath;
+}
 
 function getPlatformPaths() {
   const platform = process.platform;
@@ -13,11 +22,13 @@ function getPlatformPaths() {
     return {
       appSupport: appData,
       vscodePath: join(appData, "Code", "User"),
+      gooseConfigPath: join(appData, "Block", "goose", "config", "config.yaml"),
     };
   } else if (platform === "darwin") {
     return {
       appSupport: join(home, "Library", "Application Support"),
       vscodePath: join(home, "Library", "Application Support", "Code", "User"),
+      gooseConfigPath: join(home, ".config", "goose", "config.yaml"),
     };
   } else {
     // Linux
@@ -25,11 +36,12 @@ function getPlatformPaths() {
     return {
       appSupport: configDir,
       vscodePath: join(configDir, "Code", "User"),
+      gooseConfigPath: join(configDir, "goose", "config.yaml"),
     };
   }
 }
 
-const { appSupport, vscodePath } = getPlatformPaths();
+const { appSupport, vscodePath, gooseConfigPath } = getPlatformPaths();
 
 function transformGooseConfig(
   serverName: string,
@@ -39,8 +51,10 @@ function transformGooseConfig(
     const gooseType = config.type === "sse" ? "sse" : "streamable_http";
     return {
       name: serverName,
+      description: "",
       type: gooseType,
-      url: config.url,
+      uri: config.url,
+      headers: config.headers || {},
       enabled: true,
       timeout: 300,
     };
@@ -48,6 +62,7 @@ function transformGooseConfig(
 
   return {
     name: serverName,
+    description: "",
     cmd: config.command,
     args: config.args || [],
     enabled: true,
@@ -201,15 +216,14 @@ export const agents: Record<AgentType, AgentConfig> = {
   goose: {
     name: "goose",
     displayName: "Goose",
-    configPath: join(home, ".config", "goose", "config.yaml"),
-    localConfigPath: ".goose/config.yaml",
-    projectDetectPaths: [".goose"],
+    configPath: gooseConfigPath,
+    projectDetectPaths: [], // Global only - no project support
     configKey: "extensions",
     format: "yaml",
     supportedTransports: ["stdio", "http", "sse"],
-    supportsHeaders: false,
+    supportsHeaders: true,
     detectGlobalInstall: async () => {
-      return existsSync(join(home, ".config", "goose"));
+      return existsSync(gooseConfigPath);
     },
     transformConfig: transformGooseConfig,
   },
@@ -324,4 +338,125 @@ export function isTransportSupported(
   transport: "stdio" | "sse" | "http",
 ): boolean {
   return agents[agentType].supportedTransports.includes(transport);
+}
+
+export async function promptForAgents(
+  message: string,
+  choices: Array<{ value: AgentType; label: string; hint?: string }>,
+  defaultToAll: boolean = false,
+): Promise<AgentType[] | symbol> {
+  let lastSelected: string[] | undefined;
+  try {
+    lastSelected = await getLastSelectedAgents();
+  } catch {
+    // Ignore lock read errors
+  }
+
+  const validAgents = choices.map((c) => c.value);
+  let initialValues: AgentType[];
+
+  if (lastSelected && lastSelected.length > 0) {
+    initialValues = lastSelected.filter((a) =>
+      validAgents.includes(a as AgentType),
+    ) as AgentType[];
+
+    if (initialValues.length === 0 && defaultToAll) {
+      initialValues = validAgents;
+    }
+  } else {
+    initialValues = defaultToAll ? validAgents : [];
+  }
+
+  const selected = await p.multiselect({
+    message,
+    options: choices,
+    required: true,
+    initialValues,
+  });
+
+  if (!p.isCancel(selected)) {
+    try {
+      await saveSelectedAgents(selected as string[]);
+    } catch {
+      // Ignore lock write errors
+    }
+  }
+
+  return selected as AgentType[] | symbol;
+}
+
+export async function selectAgentsInteractive(
+  availableAgents: AgentType[],
+  options: { global?: boolean },
+): Promise<AgentType[] | symbol> {
+  let lastSelected: string[] | undefined;
+  try {
+    lastSelected = await getLastSelectedAgents();
+  } catch {
+    // Ignore lock read errors
+  }
+
+  const validLastSelected = lastSelected?.filter((a) =>
+    availableAgents.includes(a as AgentType),
+  ) as AgentType[] | undefined;
+
+  const selectOptions: Array<{ value: string; label: string; hint: string }> =
+    [];
+  const hasPrevious = validLastSelected && validLastSelected.length > 0;
+
+  if (hasPrevious) {
+    const agentNames = validLastSelected
+      .map((a) => agents[a].displayName)
+      .join(", ");
+    selectOptions.push({
+      value: "previous",
+      label: "Same as last time (Recommended)",
+      hint: agentNames,
+    });
+  }
+
+  selectOptions.push({
+    value: "all",
+    label: hasPrevious
+      ? "All available agents"
+      : "All available agents (Recommended)",
+    hint: `Install to all ${availableAgents.length} available agents`,
+  });
+
+  selectOptions.push({
+    value: "select",
+    label: "Select specific agents",
+    hint: "Choose which agents to install to",
+  });
+
+  const installChoice = await p.select({
+    message: "Install to",
+    options: selectOptions,
+  });
+
+  if (p.isCancel(installChoice)) {
+    return installChoice;
+  }
+
+  if (installChoice === "all") {
+    return availableAgents;
+  }
+
+  if (installChoice === "previous" && validLastSelected) {
+    return validLastSelected;
+  }
+
+  const agentChoices = availableAgents.map((agentType) => {
+    const localPath = agents[agentType].localConfigPath;
+    const hint = options.global
+      ? shortenPath(agents[agentType].configPath)
+      : (localPath ?? shortenPath(agents[agentType].configPath));
+    return {
+      value: agentType,
+      label: agents[agentType].displayName,
+      hint,
+    };
+  });
+
+  return promptForAgents("Select agents to install to", agentChoices, false);
 }
