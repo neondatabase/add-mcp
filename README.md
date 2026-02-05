@@ -121,6 +121,8 @@ The CLI automatically detects agents based on your environment:
 
 Local servers (npm packages, commands) always use **stdio** transport.
 
+Note that some agents like Cursor and opencode do not require the `type` information to be set.
+
 ## HTTP Headers
 
 Use `--header` to pass custom headers for remote servers. The flag can be repeated.

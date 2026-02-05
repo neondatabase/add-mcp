@@ -134,6 +134,25 @@ function transformCodexConfig(
   };
 }
 
+function transformCursorConfig(
+  _serverName: string,
+  config: McpServerConfig,
+): unknown {
+  if (config.url) {
+    const remoteConfig: Record<string, unknown> = {
+      url: config.url,
+    };
+
+    if (config.headers && Object.keys(config.headers).length > 0) {
+      remoteConfig.headers = config.headers;
+    }
+
+    return remoteConfig;
+  }
+
+  return config;
+}
+
 export const agents: Record<AgentType, AgentConfig> = {
   "claude-code": {
     name: "claude-code",
@@ -196,6 +215,7 @@ export const agents: Record<AgentType, AgentConfig> = {
     detectGlobalInstall: async () => {
       return existsSync(join(home, ".cursor"));
     },
+    transformConfig: transformCursorConfig,
   },
 
   "gemini-cli": {

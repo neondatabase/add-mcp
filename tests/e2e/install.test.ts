@@ -99,8 +99,32 @@ test("E2E: Install remote MCP to Cursor (local)", () => {
   assert.ok(mcpServers);
 
   const serverConfig = mcpServers.example as Record<string, unknown>;
-  assert.strictEqual(serverConfig.type, "http");
+  assert.ok(!("type" in serverConfig));
   assert.strictEqual(serverConfig.url, "https://mcp.example.com/api");
+});
+
+test("E2E: Install remote MCP to Cursor (local, sse)", () => {
+  const tempDir = createTempDir();
+  const parsed = parseSource("https://mcp.example.com/sse");
+  const config = buildServerConfig(parsed, { transport: "sse" });
+
+  const result = installServerForAgent("example-sse", config, "cursor", {
+    local: true,
+    cwd: tempDir,
+  });
+
+  assert.strictEqual(result.success, true);
+
+  const configPath = join(tempDir, ".cursor", "mcp.json");
+  assert.strictEqual(existsSync(configPath), true);
+
+  const savedConfig = readJsonConfig(configPath);
+  const mcpServers = savedConfig.mcpServers as Record<string, unknown>;
+  assert.ok(mcpServers);
+
+  const serverConfig = mcpServers["example-sse"] as Record<string, unknown>;
+  assert.ok(!("type" in serverConfig));
+  assert.strictEqual(serverConfig.url, "https://mcp.example.com/sse");
 });
 
 test("E2E: Install package MCP to Cursor (local)", () => {
