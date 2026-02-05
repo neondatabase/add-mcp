@@ -96,7 +96,8 @@ The CLI automatically detects agents based on your environment:
 **Default (project mode):**
 
 - Detects project-level config files (`.cursor/`, `.vscode/`, `.mcp.json`, etc.)
-- Only shows agents that have project config in the current directory
+- Selects detected agents (have project config in the current directory) by default
+- Shows detected agents plus all other supported agents for selection
 - Installs to project-level config files
 
 **With `-g` (global mode):**
@@ -106,7 +107,7 @@ The CLI automatically detects agents based on your environment:
 
 **No agents detected:**
 
-- Interactive mode: Shows an agent selector (all available, last selection, or pick specific)
+- Interactive mode: Defaults to the last selection and shows all agents for selection
 - With `--yes`: Installs to all project-capable agents (project mode) or all global-capable agents (global mode)
 
 ## Transport Types
