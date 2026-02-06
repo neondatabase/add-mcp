@@ -10,6 +10,7 @@ export type AgentType =
   | "zed";
 
 export const agentAliases: Record<string, AgentType> = {
+  gemini: "gemini-cli",
   "github-copilot": "vscode",
 };
 

@@ -147,7 +147,7 @@ MCP servers can be installed to any of these agents:
 | VS Code        | `vscode`         | `.vscode/mcp.json`      | `~/Library/Application Support/Code/User/mcp.json`                |
 | Zed            | `zed`            | `.zed/settings.json`    | `~/Library/Application Support/Zed/settings.json`                 |
 
-**Aliases:** `github-copilot` → `vscode`
+**Aliases:** `gemini` → `gemini-cli`, `github-copilot` → `vscode`
 
 The CLI uses smart detection to find agents in your project directory and globally installed agents. See [Smart Detection](#smart-detection) for details.
 
