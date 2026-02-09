@@ -16,25 +16,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Type check
-        run: npx tsc --noEmit
+        run: bun run typecheck
 
       - name: Run unit tests
         run: |
-          npx tsx tests/source-parser.test.ts
-          npx tsx tests/installer.test.ts
+          bun run tsx tests/source-parser.test.ts
+          bun run tsx tests/installer.test.ts
 
       - name: Run e2e tests
-        run: npx tsx tests/e2e/install.test.ts
+        run: bun run tsx tests/e2e/install.test.ts
 
       - name: Build
-        run: npm run build
+        run: bun run build
