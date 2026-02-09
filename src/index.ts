@@ -213,13 +213,52 @@ function listAgents(): void {
 
   const allAgentTypes = getAgentTypes();
 
+  // Collect aliases per agent type
+  const aliasesByAgent: Partial<Record<AgentType, string[]>> = {};
+  for (const [alias, target] of Object.entries(agentAliases)) {
+    if (!aliasesByAgent[target]) {
+      aliasesByAgent[target] = [];
+    }
+    aliasesByAgent[target].push(alias);
+  }
+
+  // Calculate column widths
+  const nameColWidth = Math.max(
+    "Argument".length,
+    ...allAgentTypes.map((t) => t.length),
+  );
+  const clientColWidth = Math.max(
+    "MCP Client".length,
+    ...allAgentTypes.map((t) => agents[t].displayName.length),
+  );
+  const aliasColWidth = Math.max(
+    "Aliases".length,
+    ...allAgentTypes.map(
+      (t) => (aliasesByAgent[t] ? aliasesByAgent[t].join(", ") : "").length,
+    ),
+  );
+
+  const pad = (str: string, width: number) =>
+    str + " ".repeat(Math.max(0, width - str.length));
+
+  // Header
+  const header = `  ${pad("Argument", nameColWidth)}  ${pad("MCP Client", clientColWidth)}  ${pad("Aliases", aliasColWidth)}  Local  Global`;
+  const separator = `  ${"-".repeat(nameColWidth)}  ${"-".repeat(clientColWidth)}  ${"-".repeat(aliasColWidth)}  -----  ------`;
+
+  console.log(`${DIM}${header}${RESET}`);
+  console.log(`${DIM}${separator}${RESET}`);
+
   for (const agentType of allAgentTypes) {
     const agent = agents[agentType];
-    const hasProjectSupport = supportsProjectConfig(agentType);
-    const scope = hasProjectSupport ? "project, global" : "global";
+    const hasLocal = supportsProjectConfig(agentType);
+    const localMark = hasLocal ? "  ✓  " : "  -  ";
+    const globalMark = "  ✓  ";
+    const aliasStr = aliasesByAgent[agentType]
+      ? aliasesByAgent[agentType].join(", ")
+      : "";
 
     console.log(
-      `  ${TEXT}${agent.displayName}${RESET} ${DIM}(${scope})${RESET}`,
+      `  ${TEXT}${pad(agentType, nameColWidth)}${RESET}  ${DIM}${pad(agent.displayName, clientColWidth)}${RESET}  ${DIM}${pad(aliasStr, aliasColWidth)}${RESET}  ${TEXT}${localMark}${RESET} ${TEXT}${globalMark}${RESET}`,
     );
   }
 
