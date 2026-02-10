@@ -23,12 +23,14 @@ function getPlatformPaths() {
       appSupport: appData,
       vscodePath: join(appData, "Code", "User"),
       gooseConfigPath: join(appData, "Block", "goose", "config", "config.yaml"),
+      antigravityPath: join(appData, "Google", "Antigravity", "mcp_config.json"), // could not test that
     };
   } else if (platform === "darwin") {
     return {
       appSupport: join(home, "Library", "Application Support"),
       vscodePath: join(home, "Library", "Application Support", "Code", "User"),
       gooseConfigPath: join(home, ".config", "goose", "config.yaml"),
+      antigravityPath: join(home, ".gemini", "antigravity", "mcp_config.json"),
     };
   } else {
     // Linux
@@ -37,11 +39,13 @@ function getPlatformPaths() {
       appSupport: configDir,
       vscodePath: join(configDir, "Code", "User"),
       gooseConfigPath: join(configDir, "goose", "config.yaml"),
+      antigravityPath: join(configDir, ".gemini", "antigravity", "mcp_config.json"),
     };
   }
 }
 
-const { appSupport, vscodePath, gooseConfigPath } = getPlatformPaths();
+const { appSupport, vscodePath, gooseConfigPath, antigravityPath } =
+  getPlatformPaths();
 
 function transformGooseConfig(
   serverName: string,
@@ -154,6 +158,20 @@ function transformCursorConfig(
 }
 
 export const agents: Record<AgentType, AgentConfig> = {
+  antigravity: {
+    name: "antigravity",
+    displayName: "Antigravity",
+    configPath: antigravityPath,
+    localConfigPath: ".antigravity/mcp_config.json", // this is undocumented, most likely not possible yet
+    projectDetectPaths: [".antigravity"],
+    configKey: "mcpServers",
+    format: "json",
+    supportedTransports: ["stdio"],
+    supportsHeaders: false,
+    detectGlobalInstall: async () => {
+      return existsSync(antigravityPath);
+    },
+  },
   "claude-code": {
     name: "claude-code",
     displayName: "Claude Code",

@@ -137,6 +137,7 @@ MCP servers can be installed to any of these agents:
 
 | Agent          | `--agent`        | Project Path            | Global Path                                                       |
 | -------------- | ---------------- | ----------------------- | ----------------------------------------------------------------- |
+| Antigravity    | `antigravity`    | -                       | `~/.gemini/antigravity/mcp_config.json`                           |
 | Claude Code    | `claude-code`    | `.mcp.json`             | `~/.claude.json`                                                  |
 | Claude Desktop | `claude-desktop` | -                       | `~/Library/Application Support/Claude/claude_desktop_config.json` |
 | Codex          | `codex`          | `.codex/config.toml`    | `~/.codex/config.toml`                                            |
