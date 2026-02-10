@@ -1,4 +1,5 @@
 export type AgentType =
+  | "antigravity"
   | "claude-code"
   | "claude-desktop"
   | "codex"
