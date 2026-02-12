@@ -108,8 +108,7 @@ function transformOpenCodeConfig(
 
   return {
     type: "local",
-    command: config.command,
-    args: config.args || [],
+    command: [config.command, ...(config.args || [])],
     enabled: true,
     environment: config.env || {},
   };
@@ -252,8 +251,8 @@ export const agents: Record<AgentType, AgentConfig> = {
     name: "opencode",
     displayName: "OpenCode",
     configPath: join(home, ".config", "opencode", "opencode.json"),
-    localConfigPath: ".opencode.json",
-    projectDetectPaths: [".opencode.json", ".opencode"],
+    localConfigPath: "opencode.json",
+    projectDetectPaths: ["opencode.json", ".opencode"],
     configKey: "mcp",
     format: "json",
     supportedTransports: ["stdio", "http", "sse"],
