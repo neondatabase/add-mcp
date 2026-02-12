@@ -186,9 +186,9 @@ test("detectProjectAgents - detects .claude directory (claude-code)", () => {
   assert.ok(detected.includes("claude-code"));
 });
 
-test("detectProjectAgents - detects .opencode.json file", () => {
+test("detectProjectAgents - detects opencode.json file", () => {
   const tempDir = createTempDir();
-  writeFileSync(join(tempDir, ".opencode.json"), "{}");
+  writeFileSync(join(tempDir, "opencode.json"), "{}");
 
   const detected = detectProjectAgents(tempDir);
   assert.ok(detected.includes("opencode"));
