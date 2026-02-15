@@ -11,6 +11,7 @@ import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildServerConfig, installServer } from "../src/installer.js";
+import { agents } from "../src/agents.js";
 import { parseSource } from "../src/source-parser.js";
 import type { AgentType } from "../src/types.js";
 
@@ -283,6 +284,54 @@ test("installServer - routing with multiple agents to different scopes", () => {
 
   // VSCode should be global (not in tempDir)
   assert.ok(!vscodeResult?.path.includes(tempDir));
+});
+
+test("installServer - github-copilot-cli local uses VS Code servers key", () => {
+  const tempDir = createTempDir();
+  const parsed = parseSource("mcp-server-postgres");
+  const config = buildServerConfig(parsed);
+
+  const results = installServer("postgres", config, ["github-copilot-cli"], {
+    routing: new Map<AgentType, "local" | "global">([
+      ["github-copilot-cli", "local"],
+    ]),
+    cwd: tempDir,
+  });
+
+  const result = results.get("github-copilot-cli");
+  assert.ok(result?.success);
+  const saved = readJsonConfig(join(tempDir, ".vscode", "mcp.json"));
+  const servers = saved.servers as Record<string, unknown>;
+  assert.ok(servers.postgres);
+});
+
+test("installServer - github-copilot-cli global uses mcpServers key and CLI schema", () => {
+  const tempDir = createTempDir();
+  const originalPath = agents["github-copilot-cli"].configPath;
+  agents["github-copilot-cli"].configPath = join(tempDir, "mcp-config.json");
+
+  try {
+    const parsed = parseSource("https://mcp.example.com/mcp");
+    const config = buildServerConfig(parsed);
+
+    const results = installServer("example", config, ["github-copilot-cli"], {
+      routing: new Map<AgentType, "local" | "global">([
+        ["github-copilot-cli", "global"],
+      ]),
+      cwd: tempDir,
+    });
+
+    const result = results.get("github-copilot-cli");
+    assert.ok(result?.success);
+    const saved = readJsonConfig(join(tempDir, "mcp-config.json"));
+    const mcpServers = saved.mcpServers as Record<string, unknown>;
+    const server = mcpServers.example as Record<string, unknown>;
+    assert.strictEqual(server.type, "http");
+    assert.strictEqual(server.url, "https://mcp.example.com/mcp");
+    assert.deepStrictEqual(server.tools, ["*"]);
+  } finally {
+    agents["github-copilot-cli"].configPath = originalPath;
+  }
 });
 
 // Cleanup and summary

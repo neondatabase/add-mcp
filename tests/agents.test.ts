@@ -21,6 +21,7 @@ import {
   buildAgentSelectionChoices,
 } from "../src/agents.js";
 import type { AgentType } from "../src/types.js";
+import { agentAliases } from "../src/types.js";
 
 let passed = 0;
 let failed = 0;
@@ -59,15 +60,16 @@ function cleanup() {
 // Agent Configuration Tests
 // ============================================
 
-test("getAgentTypes returns all 9 agents", () => {
+test("getAgentTypes returns all 10 agents", () => {
   const types = getAgentTypes();
-  assert.strictEqual(types.length, 9);
+  assert.strictEqual(types.length, 10);
   assert.ok(types.includes("claude-code"));
   assert.ok(types.includes("claude-desktop"));
   assert.ok(types.includes("codex"));
   assert.ok(types.includes("cursor"));
   assert.ok(types.includes("gemini-cli"));
   assert.ok(types.includes("goose"));
+  assert.ok(types.includes("github-copilot-cli"));
   assert.ok(types.includes("opencode"));
   assert.ok(types.includes("vscode"));
   assert.ok(types.includes("zed"));
@@ -105,6 +107,7 @@ test("supportsProjectConfig - returns true for project-capable agents", () => {
   assert.strictEqual(supportsProjectConfig("vscode"), true);
   assert.strictEqual(supportsProjectConfig("opencode"), true);
   assert.strictEqual(supportsProjectConfig("gemini-cli"), true);
+  assert.strictEqual(supportsProjectConfig("github-copilot-cli"), true);
   assert.strictEqual(supportsProjectConfig("codex"), true);
   assert.strictEqual(supportsProjectConfig("zed"), true);
 });
@@ -114,14 +117,15 @@ test("supportsProjectConfig - returns false for global-only agents", () => {
   assert.strictEqual(supportsProjectConfig("goose"), false);
 });
 
-test("getProjectCapableAgents returns 7 agents", () => {
+test("getProjectCapableAgents returns 8 agents", () => {
   const projectAgents = getProjectCapableAgents();
-  assert.strictEqual(projectAgents.length, 7);
+  assert.strictEqual(projectAgents.length, 8);
   assert.ok(projectAgents.includes("claude-code"));
   assert.ok(projectAgents.includes("cursor"));
   assert.ok(projectAgents.includes("vscode"));
   assert.ok(projectAgents.includes("opencode"));
   assert.ok(projectAgents.includes("gemini-cli"));
+  assert.ok(projectAgents.includes("github-copilot-cli"));
   assert.ok(projectAgents.includes("codex"));
   assert.ok(projectAgents.includes("zed"));
 });
@@ -168,6 +172,7 @@ test("detectProjectAgents - detects .vscode directory", () => {
 
   const detected = detectProjectAgents(tempDir);
   assert.ok(detected.includes("vscode"));
+  assert.ok(detected.includes("github-copilot-cli"));
 });
 
 test("detectProjectAgents - detects .mcp.json file (claude-code)", () => {
@@ -233,9 +238,10 @@ test("detectProjectAgents - detects multiple agents", () => {
   writeFileSync(join(tempDir, ".mcp.json"), "{}");
 
   const detected = detectProjectAgents(tempDir);
-  assert.strictEqual(detected.length, 3);
+  assert.strictEqual(detected.length, 4);
   assert.ok(detected.includes("cursor"));
   assert.ok(detected.includes("vscode"));
+  assert.ok(detected.includes("github-copilot-cli"));
   assert.ok(detected.includes("claude-code"));
 });
 

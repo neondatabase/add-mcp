@@ -199,6 +199,31 @@ test("E2E: Install to VS Code (local)", () => {
   assert.ok(servers.company);
 });
 
+test("E2E: Install to GitHub Copilot CLI (local) writes VS Code schema", () => {
+  const tempDir = createTempDir();
+  const parsed = parseSource("https://api.company.com/mcp");
+  const config = buildServerConfig(parsed);
+
+  const result = installServerForAgent(
+    "company",
+    config,
+    "github-copilot-cli",
+    {
+      local: true,
+      cwd: tempDir,
+    },
+  );
+
+  assert.strictEqual(result.success, true);
+
+  const configPath = join(tempDir, ".vscode", "mcp.json");
+  assert.strictEqual(existsSync(configPath), true);
+
+  const savedConfig = readJsonConfig(configPath);
+  const servers = savedConfig.servers as Record<string, unknown>;
+  assert.ok(servers.company);
+});
+
 test("E2E: Install to OpenCode (local) - transformed format", () => {
   const tempDir = createTempDir();
   const parsed = parseSource("https://mcp.openai.com/api");
@@ -527,7 +552,12 @@ test("E2E: Install to multiple agents", () => {
   const parsed = parseSource("https://mcp.example.com/api");
   const config = buildServerConfig(parsed);
 
-  const agents: AgentType[] = ["cursor", "claude-code", "vscode"];
+  const agents: AgentType[] = [
+    "cursor",
+    "claude-code",
+    "vscode",
+    "github-copilot-cli",
+  ];
 
   for (const agent of agents) {
     const result = installServerForAgent("example", config, agent, {
@@ -541,6 +571,11 @@ test("E2E: Install to multiple agents", () => {
   assert.strictEqual(existsSync(join(tempDir, ".cursor", "mcp.json")), true);
   assert.strictEqual(existsSync(join(tempDir, ".mcp.json")), true);
   assert.strictEqual(existsSync(join(tempDir, ".vscode", "mcp.json")), true);
+
+  // VS Code and GitHub Copilot CLI both write to the same local file/key.
+  const savedConfig = readJsonConfig(join(tempDir, ".vscode", "mcp.json"));
+  const servers = savedConfig.servers as Record<string, unknown>;
+  assert.ok(servers.example);
 });
 
 // Cleanup and summary
