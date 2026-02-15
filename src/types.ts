@@ -5,6 +5,7 @@ export type AgentType =
   | "cursor"
   | "gemini-cli"
   | "goose"
+  | "github-copilot-cli"
   | "opencode"
   | "vscode"
   | "zed";
@@ -29,6 +30,8 @@ export interface AgentConfig {
   projectDetectPaths: string[];
   /** Key in config file where MCP servers are stored (supports dot notation) */
   configKey: string;
+  /** Optional key for project-level config when different from global configKey */
+  localConfigKey?: string;
   /** Config file format */
   format: ConfigFormat;
   /** Supported transport types for this agent */
@@ -38,7 +41,11 @@ export interface AgentConfig {
   /** Function to detect if agent is installed globally */
   detectGlobalInstall: () => Promise<boolean>;
   /** Optional function to transform server config to agent-specific format */
-  transformConfig?: (serverName: string, config: McpServerConfig) => unknown;
+  transformConfig?: (
+    serverName: string,
+    config: McpServerConfig,
+    context?: { local: boolean },
+  ) => unknown;
 }
 
 export type SourceType = "remote" | "package" | "command";

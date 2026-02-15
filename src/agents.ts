@@ -1,6 +1,6 @@
 import * as p from "@clack/prompts";
 import { homedir } from "os";
-import { join } from "path";
+import { dirname, join } from "path";
 import { existsSync } from "fs";
 import type { AgentConfig, AgentType, McpServerConfig } from "./types.js";
 import { getLastSelectedAgents, saveSelectedAgents } from "./mcp-lock.js";
@@ -42,6 +42,10 @@ function getPlatformPaths() {
 }
 
 const { appSupport, vscodePath, gooseConfigPath } = getPlatformPaths();
+const copilotConfigPath = join(
+  process.env.XDG_CONFIG_HOME || join(home, ".copilot"),
+  "mcp-config.json",
+);
 
 function transformGooseConfig(
   serverName: string,
@@ -152,6 +156,44 @@ function transformCursorConfig(
   return config;
 }
 
+function transformGitHubCopilotCliConfig(
+  _serverName: string,
+  config: McpServerConfig,
+  context?: { local: boolean },
+): unknown {
+  // Project-level config shares VS Code mcp.json schema.
+  if (context?.local) {
+    return config;
+  }
+
+  if (config.url) {
+    const remoteConfig: Record<string, unknown> = {
+      type: config.type || "http",
+      url: config.url,
+      tools: ["*"],
+    };
+
+    if (config.headers && Object.keys(config.headers).length > 0) {
+      remoteConfig.headers = config.headers;
+    }
+
+    return remoteConfig;
+  }
+
+  const localConfig: Record<string, unknown> = {
+    type: "stdio",
+    command: config.command,
+    args: config.args || [],
+    tools: ["*"],
+  };
+
+  if (config.env && Object.keys(config.env).length > 0) {
+    localConfig.env = config.env;
+  }
+
+  return localConfig;
+}
+
 export const agents: Record<AgentType, AgentConfig> = {
   "claude-code": {
     name: "claude-code",
@@ -245,6 +287,23 @@ export const agents: Record<AgentType, AgentConfig> = {
       return existsSync(gooseConfigPath);
     },
     transformConfig: transformGooseConfig,
+  },
+
+  "github-copilot-cli": {
+    name: "github-copilot-cli",
+    displayName: "GitHub Copilot CLI",
+    configPath: copilotConfigPath,
+    localConfigPath: ".vscode/mcp.json",
+    projectDetectPaths: [".vscode"],
+    configKey: "mcpServers",
+    localConfigKey: "servers",
+    format: "json",
+    supportedTransports: ["stdio", "http", "sse"],
+    supportsHeaders: true,
+    detectGlobalInstall: async () => {
+      return existsSync(dirname(copilotConfigPath));
+    },
+    transformConfig: transformGitHubCopilotCliConfig,
   },
 
   opencode: {

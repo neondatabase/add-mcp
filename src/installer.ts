@@ -82,6 +82,17 @@ function getConfigPath(
   return agent.configPath;
 }
 
+function getConfigKey(
+  agent: AgentConfig,
+  options: InstallOptions = {},
+): string {
+  if (options.local && agent.localConfigKey) {
+    return agent.localConfigKey;
+  }
+
+  return agent.configKey;
+}
+
 export function installServerForAgent(
   serverName: string,
   serverConfig: McpServerConfig,
@@ -98,16 +109,15 @@ export function installServerForAgent(
     }
 
     const transformedConfig = agent.transformConfig
-      ? agent.transformConfig(serverName, serverConfig)
+      ? agent.transformConfig(serverName, serverConfig, {
+          local: Boolean(options.local),
+        })
       : serverConfig;
 
-    const config = buildConfigWithKey(
-      agent.configKey,
-      serverName,
-      transformedConfig,
-    );
+    const configKey = getConfigKey(agent, options);
+    const config = buildConfigWithKey(configKey, serverName, transformedConfig);
 
-    writeConfig(configPath, config, agent.format, agent.configKey);
+    writeConfig(configPath, config, agent.format, configKey);
 
     return {
       success: true,

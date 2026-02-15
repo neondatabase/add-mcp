@@ -2,7 +2,7 @@
 
 Add MCP servers to your favorite coding agents with a single command.
 
-Supports **Claude Code**, **Codex**, **Cursor**, **OpenCode**, **VSCode** and [4 more](#supported-agents).
+Supports **Claude Code**, **Codex**, **Cursor**, **OpenCode**, **VSCode** and [5 more](#supported-agents).
 
 ## Install an MCP Server
 
@@ -135,17 +135,18 @@ Agents that do not support headers: Goose.
 
 MCP servers can be installed to any of these agents:
 
-| Agent          | `--agent`        | Project Path            | Global Path                                                       |
-| -------------- | ---------------- | ----------------------- | ----------------------------------------------------------------- |
-| Claude Code    | `claude-code`    | `.mcp.json`             | `~/.claude.json`                                                  |
-| Claude Desktop | `claude-desktop` | -                       | `~/Library/Application Support/Claude/claude_desktop_config.json` |
-| Codex          | `codex`          | `.codex/config.toml`    | `~/.codex/config.toml`                                            |
-| Cursor         | `cursor`         | `.cursor/mcp.json`      | `~/.cursor/mcp.json`                                              |
-| Gemini CLI     | `gemini-cli`     | `.gemini/settings.json` | `~/.gemini/settings.json`                                         |
-| Goose          | `goose`          | `.goose/config.yaml`    | `~/.config/goose/config.yaml`                                     |
-| OpenCode       | `opencode`       | `opencode.json`         | `~/.config/opencode/opencode.json`                                |
-| VS Code        | `vscode`         | `.vscode/mcp.json`      | `~/Library/Application Support/Code/User/mcp.json`                |
-| Zed            | `zed`            | `.zed/settings.json`    | `~/Library/Application Support/Zed/settings.json`                 |
+| Agent              | `--agent`            | Project Path            | Global Path                                                       |
+| ------------------ | -------------------- | ----------------------- | ----------------------------------------------------------------- |
+| Claude Code        | `claude-code`        | `.mcp.json`             | `~/.claude.json`                                                  |
+| Claude Desktop     | `claude-desktop`     | -                       | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Codex              | `codex`              | `.codex/config.toml`    | `~/.codex/config.toml`                                            |
+| Cursor             | `cursor`             | `.cursor/mcp.json`      | `~/.cursor/mcp.json`                                              |
+| Gemini CLI         | `gemini-cli`         | `.gemini/settings.json` | `~/.gemini/settings.json`                                         |
+| Goose              | `goose`              | `.goose/config.yaml`    | `~/.config/goose/config.yaml`                                     |
+| GitHub Copilot CLI | `github-copilot-cli` | `.vscode/mcp.json`      | `~/.copilot/mcp-config.json`                                      |
+| OpenCode           | `opencode`           | `opencode.json`         | `~/.config/opencode/opencode.json`                                |
+| VS Code            | `vscode`             | `.vscode/mcp.json`      | `~/Library/Application Support/Code/User/mcp.json`                |
+| Zed                | `zed`                | `.zed/settings.json`    | `~/Library/Application Support/Zed/settings.json`                 |
 
 **Aliases:** `gemini` → `gemini-cli`, `github-copilot` → `vscode`
 
