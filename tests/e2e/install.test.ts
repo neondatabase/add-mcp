@@ -211,7 +211,7 @@ test("E2E: Install to OpenCode (local) - transformed format", () => {
 
   assert.strictEqual(result.success, true);
 
-  const configPath = join(tempDir, ".opencode.json");
+  const configPath = join(tempDir, "opencode.json");
   const savedConfig = readJsonConfig(configPath);
   const mcp = savedConfig.mcp as Record<string, unknown>;
 
@@ -234,13 +234,17 @@ test("E2E: Install local server to OpenCode - transformed format", () => {
 
   assert.strictEqual(result.success, true);
 
-  const configPath = join(tempDir, ".opencode.json");
+  const configPath = join(tempDir, "opencode.json");
   const savedConfig = readJsonConfig(configPath);
   const mcp = savedConfig.mcp as Record<string, unknown>;
 
   const serverConfig = mcp.postgres as Record<string, unknown>;
   assert.strictEqual(serverConfig.type, "local");
-  assert.strictEqual(serverConfig.command, "npx");
+  assert.deepStrictEqual(serverConfig.command, [
+    "npx",
+    "-y",
+    "mcp-server-postgres",
+  ]);
   assert.strictEqual(serverConfig.enabled, true);
 });
 
