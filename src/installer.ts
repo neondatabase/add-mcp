@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync } from "fs";
-import { join, dirname } from "path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { join, dirname, isAbsolute, relative, sep } from "path";
 import type {
   AgentType,
   AgentConfig,
@@ -37,6 +37,16 @@ export interface BuildServerConfigOptions {
   headers?: Record<string, string>;
 }
 
+export interface UpdateGitignoreOptions {
+  /** Current working directory where .gitignore lives */
+  cwd?: string;
+}
+
+export interface UpdateGitignoreResult {
+  path: string;
+  added: string[];
+}
+
 export function buildServerConfig(
   parsed: ParsedSource,
   options: BuildServerConfigOptions = {},
@@ -68,6 +78,59 @@ export function buildServerConfig(
   return {
     command: "npx",
     args: ["-y", parsed.value],
+  };
+}
+
+export function updateGitignoreWithPaths(
+  paths: string[],
+  options: UpdateGitignoreOptions = {},
+): UpdateGitignoreResult {
+  const cwd = options.cwd || process.cwd();
+  const gitignorePath = join(cwd, ".gitignore");
+  const existingContent = existsSync(gitignorePath)
+    ? readFileSync(gitignorePath, "utf-8")
+    : "";
+
+  const existingEntries = new Set(
+    existingContent
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0),
+  );
+
+  const entriesToAdd: string[] = [];
+
+  for (const filePath of paths) {
+    const relativePath = isAbsolute(filePath) ? relative(cwd, filePath) : filePath;
+    if (!relativePath || relativePath.startsWith("..") || isAbsolute(relativePath)) {
+      continue;
+    }
+
+    const normalizedPath = relativePath.split(sep).join("/");
+    const cleanPath = normalizedPath.startsWith("./")
+      ? normalizedPath.slice(2)
+      : normalizedPath;
+
+    if (!cleanPath || cleanPath === ".gitignore" || existingEntries.has(cleanPath)) {
+      continue;
+    }
+
+    existingEntries.add(cleanPath);
+    entriesToAdd.push(cleanPath);
+  }
+
+  if (entriesToAdd.length > 0) {
+    let nextContent = existingContent;
+    if (nextContent.length > 0 && !nextContent.endsWith("\n")) {
+      nextContent += "\n";
+    }
+    nextContent += `${entriesToAdd.join("\n")}\n`;
+    writeFileSync(gitignorePath, nextContent, "utf-8");
+  }
+
+  return {
+    path: gitignorePath,
+    added: entriesToAdd,
   };
 }
 

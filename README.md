@@ -54,6 +54,9 @@ npx add-mcp mcp-server-github --all
 
 # Install to all agents, globally, without prompts
 npx add-mcp mcp-server-github --all -g -y
+
+# Add generated config files to .gitignore
+npx add-mcp https://mcp.example.com/mcp -a cursor -y --gitignore
 ```
 
 ### Options
@@ -68,6 +71,7 @@ npx add-mcp mcp-server-github --all -g -y
 | `-n, --name <name>`      | Server name (auto-inferred if not provided)                              |
 | `-y, --yes`              | Skip all confirmation prompts                                            |
 | `--all`                  | Install to all agents                                                    |
+| `--gitignore`            | Add generated config files to `.gitignore` (creates file if missing)     |
 
 ### Additional Commands
 
