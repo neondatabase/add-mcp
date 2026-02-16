@@ -199,7 +199,7 @@ program
   .option("--all", "Install to all agents")
   .option(
     "--gitignore",
-    "Add generated project config files to .gitignore (creates file if missing)",
+    "Add generated project config files to .gitignore",
   )
   .action(async (target: string | undefined, options: Options) => {
     await main(target, options);
@@ -750,7 +750,11 @@ async function main(target: string | undefined, options: Options) {
     }
   }
 
-  if (options.gitignore) {
+  if (options.gitignore && options.global) {
+    p.log.warn(
+      "--gitignore is only supported for project-scoped installations; ignoring.",
+    );
+  } else if (options.gitignore) {
     const successfulPaths = successful.map(([_, result]) => result.path);
     const gitignoreUpdate = updateGitignoreWithPaths(successfulPaths);
     if (gitignoreUpdate.added.length > 0) {
