@@ -501,6 +501,27 @@ test("E2E: Codex config transformation", () => {
   assert.strictEqual(transformed.url, "https://mcp.example.com/api");
 });
 
+test("E2E: Codex config transformation with headers", () => {
+  const parsed = parseSource("https://mcp.example.com/api");
+  const config = buildServerConfig(parsed, {
+    headers: {
+      Authorization: "Bearer token",
+    },
+  });
+
+  const codexAgent = agents.codex;
+
+  const transformed = codexAgent.transformConfig!("example", config) as Record<
+    string,
+    unknown
+  >;
+
+  assert.deepStrictEqual(transformed.http_headers, {
+    Authorization: "Bearer token",
+  });
+  assert.strictEqual("headers" in transformed, false);
+});
+
 test("E2E: Codex config transformation - local server", () => {
   const parsed = parseSource("mcp-server-postgres");
   const config = buildServerConfig(parsed);

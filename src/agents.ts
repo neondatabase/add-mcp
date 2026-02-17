@@ -123,11 +123,16 @@ function transformCodexConfig(
   config: McpServerConfig,
 ): unknown {
   if (config.url) {
-    return {
+    const remoteConfig: Record<string, unknown> = {
       type: config.type || "http",
       url: config.url,
-      headers: config.headers,
     };
+
+    if (config.headers && Object.keys(config.headers).length > 0) {
+      remoteConfig.http_headers = config.headers;
+    }
+
+    return remoteConfig;
   }
 
   return {
