@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.1] - 2026-02-17
+
+fix Codex remote HTTP header key mapping
+
 ## [1.2.0] - 2026-02-16
 
 add `--gitignore` option to append generated project MCP config paths to `.gitignore`

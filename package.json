@@ -1,12 +1,12 @@
 {
   "name": "add-mcp",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Add MCP servers to your favorite coding agents with a single command.",
   "author": "Andre Landgraf <andre@neon.tech>",
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
-    "add-mcp": "./dist/index.js"
+    "add-mcp": "dist/index.js"
   },
   "files": [
     "dist",
