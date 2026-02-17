@@ -19,7 +19,11 @@ import {
 } from "./agents.js";
 import { getLastSelectedAgents } from "./mcp-lock.js";
 import { parseSource, isRemoteSource } from "./source-parser.js";
-import { buildServerConfig, installServer } from "./installer.js";
+import {
+  buildServerConfig,
+  installServer,
+  updateGitignoreWithPaths,
+} from "./installer.js";
 
 import packageJson from "../package.json" with { type: "json" };
 
@@ -124,6 +128,7 @@ interface Options {
   header?: string[];
   yes?: boolean;
   all?: boolean;
+  gitignore?: boolean;
 }
 
 /**
@@ -192,6 +197,10 @@ program
   )
   .option("-y, --yes", "Skip confirmation prompts")
   .option("--all", "Install to all agents")
+  .option(
+    "--gitignore",
+    "Add generated project config files to .gitignore",
+  )
   .action(async (target: string | undefined, options: Options) => {
     await main(target, options);
   });
@@ -738,6 +747,24 @@ async function main(target: string | undefined, options: Options) {
       p.log.message(
         `  ${chalk.red("✗")} ${agent.displayName}: ${chalk.dim(result.error)}`,
       );
+    }
+  }
+
+  if (options.gitignore && options.global) {
+    p.log.warn(
+      "--gitignore is only supported for project-scoped installations; ignoring.",
+    );
+  } else if (options.gitignore) {
+    const successfulPaths = successful.map(([_, result]) => result.path);
+    const gitignoreUpdate = updateGitignoreWithPaths(successfulPaths);
+    if (gitignoreUpdate.added.length > 0) {
+      p.log.info(
+        `Added ${gitignoreUpdate.added.length} entr${
+          gitignoreUpdate.added.length === 1 ? "y" : "ies"
+        } to .gitignore`,
+      );
+    } else {
+      p.log.info("No new local config paths to add to .gitignore");
     }
   }
 

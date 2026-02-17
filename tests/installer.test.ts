@@ -10,7 +10,11 @@ import assert from "node:assert";
 import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildServerConfig, installServer } from "../src/installer.js";
+import {
+  buildServerConfig,
+  installServer,
+  updateGitignoreWithPaths,
+} from "../src/installer.js";
 import { agents } from "../src/agents.js";
 import { parseSource } from "../src/source-parser.js";
 import type { AgentType } from "../src/types.js";
@@ -332,6 +336,39 @@ test("installServer - github-copilot-cli global uses mcpServers key and CLI sche
   } finally {
     agents["github-copilot-cli"].configPath = originalPath;
   }
+});
+
+test("updateGitignoreWithPaths - creates .gitignore when missing", () => {
+  const tempDir = createTempDir();
+  const configPath = join(tempDir, ".cursor", "mcp.json");
+
+  const result = updateGitignoreWithPaths([configPath], { cwd: tempDir });
+
+  assert.deepStrictEqual(result.added, [".cursor/mcp.json"]);
+  const gitignorePath = join(tempDir, ".gitignore");
+  assert.strictEqual(existsSync(gitignorePath), true);
+  assert.strictEqual(readFileSync(gitignorePath, "utf-8"), ".cursor/mcp.json\n");
+});
+
+test("updateGitignoreWithPaths - appends only new local paths", () => {
+  const tempDir = createTempDir();
+  const gitignorePath = join(tempDir, ".gitignore");
+
+  updateGitignoreWithPaths([join(tempDir, ".cursor", "mcp.json")], { cwd: tempDir });
+  const result = updateGitignoreWithPaths(
+    [
+      join(tempDir, ".cursor", "mcp.json"),
+      join(tempDir, ".vscode", "mcp.json"),
+      join(tempDir, "..", "outside.json"),
+    ],
+    { cwd: tempDir },
+  );
+
+  assert.deepStrictEqual(result.added, [".vscode/mcp.json"]);
+  assert.strictEqual(
+    readFileSync(gitignorePath, "utf-8"),
+    ".cursor/mcp.json\n.vscode/mcp.json\n",
+  );
 });
 
 // Cleanup and summary
