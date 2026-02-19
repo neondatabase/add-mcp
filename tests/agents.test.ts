@@ -274,7 +274,6 @@ test("isTransportSupported - all agents support stdio", () => {
 test("isTransportSupported - most agents support http", () => {
   const httpAgents: AgentType[] = [
     "claude-code",
-    "claude-desktop",
     "codex",
     "cursor",
     "gemini-cli",
@@ -293,14 +292,43 @@ test("isTransportSupported - most agents support http", () => {
   }
 });
 
-test("isTransportSupported - all agents support sse", () => {
-  for (const type of getAgentTypes()) {
+test("isTransportSupported - most agents support sse", () => {
+  const sseAgents: AgentType[] = [
+    "claude-code",
+    "codex",
+    "cursor",
+    "gemini-cli",
+    "goose",
+    "opencode",
+    "vscode",
+    "zed",
+  ];
+
+  for (const type of sseAgents) {
     assert.strictEqual(
       isTransportSupported(type, "sse"),
       true,
       `${type} should support sse`,
     );
   }
+});
+
+test("isTransportSupported - claude-desktop only supports stdio", () => {
+  assert.strictEqual(
+    isTransportSupported("claude-desktop", "stdio"),
+    true,
+    "claude-desktop should support stdio",
+  );
+  assert.strictEqual(
+    isTransportSupported("claude-desktop", "http"),
+    false,
+    "claude-desktop should not support http",
+  );
+  assert.strictEqual(
+    isTransportSupported("claude-desktop", "sse"),
+    false,
+    "claude-desktop should not support sse",
+  );
 });
 
 // ============================================

@@ -222,8 +222,8 @@ export const agents: Record<AgentType, AgentConfig> = {
     projectDetectPaths: [], // Global only - no project support
     configKey: "mcpServers",
     format: "json",
-    supportedTransports: ["stdio", "http", "sse"],
-    supportsHeaders: true,
+    supportedTransports: ["stdio"],
+    supportsHeaders: false,
     detectGlobalInstall: async () => {
       return existsSync(join(appSupport, "Claude"));
     },
