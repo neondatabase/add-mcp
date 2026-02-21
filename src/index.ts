@@ -19,6 +19,7 @@ import {
 } from "./agents.js";
 import { getLastSelectedAgents } from "./mcp-lock.js";
 import { parseSource, isRemoteSource } from "./source-parser.js";
+import { runFind } from "./find.js";
 import {
   buildServerConfig,
   installServer,
@@ -78,6 +79,9 @@ function showBanner(): void {
   console.log(
     `  ${DIM}$${RESET} ${TEXT}npx add-mcp ${DIM}<url> ${TEXT}-a cursor${RESET}    ${DIM}Install to specific agent${RESET}`,
   );
+  console.log(
+    `  ${DIM}$${RESET} ${TEXT}npx add-mcp find ${DIM}<keyword>${RESET}     ${DIM}Search and install curated MCP servers${RESET}`,
+  );
   console.log();
   console.log(
     `${DIM}Supports:${RESET} Claude Code, Cursor, VS Code, OpenCode, and more`,
@@ -129,6 +133,68 @@ interface Options {
   yes?: boolean;
   all?: boolean;
   gitignore?: boolean;
+}
+
+function extractOptions(
+  raw: Options | { opts: () => Options; optsWithGlobals?: () => Options },
+): Options {
+  if (
+    typeof (raw as { optsWithGlobals?: unknown }).optsWithGlobals === "function"
+  ) {
+    return (raw as { optsWithGlobals: () => Options }).optsWithGlobals();
+  }
+  if (typeof (raw as { opts?: unknown }).opts === "function") {
+    return (raw as { opts: () => Options }).opts();
+  }
+  return raw as Options;
+}
+
+function extractFindOptionsFromArgv(): Partial<Options> {
+  const argv = process.argv.slice(2);
+  const result: Partial<Options> = {};
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (!arg) continue;
+
+    if (arg === "-y" || arg === "--yes") {
+      result.yes = true;
+      continue;
+    }
+    if (arg === "-g" || arg === "--global") {
+      result.global = true;
+      continue;
+    }
+    if (arg === "--all") {
+      result.all = true;
+      continue;
+    }
+    if (arg === "--gitignore") {
+      result.gitignore = true;
+      continue;
+    }
+    if ((arg === "-n" || arg === "--name") && argv[i + 1]) {
+      result.name = argv[i + 1];
+      i += 1;
+      continue;
+    }
+    if (arg === "-a" || arg === "--agent") {
+      const agents: string[] = result.agent ? [...result.agent] : [];
+      let j = i + 1;
+      while (j < argv.length) {
+        const value = argv[j];
+        if (!value || value.startsWith("-")) break;
+        agents.push(value);
+        j += 1;
+      }
+      if (agents.length > 0) {
+        result.agent = agents;
+      }
+      i = j - 1;
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -210,6 +276,85 @@ program
   .description("List all supported coding agents")
   .action(() => {
     listAgents();
+  });
+
+async function runFindCommand(
+  keyword: string,
+  rawOptions: Options | { opts: () => Options },
+) {
+  const options = {
+    ...extractOptions(rawOptions),
+    ...extractFindOptionsFromArgv(),
+  };
+  const query = keyword.trim();
+  if (!query) {
+    p.log.error("Please provide a search keyword");
+    process.exit(1);
+  }
+
+  const installPlan = await runFind(query, {
+    yes: options.yes,
+  });
+
+  if (!installPlan) {
+    p.cancel("Find cancelled");
+    process.exit(0);
+  }
+
+  const mergedOptions: Options = {
+    ...options,
+    name: options.name || installPlan.serverName,
+    transport: installPlan.transport ?? options.transport,
+    header: installPlan.headers
+      ? Object.entries(installPlan.headers).map(([key, value]) => `${key}: ${value}`)
+      : options.header,
+  };
+
+  await main(installPlan.target, mergedOptions);
+}
+
+program
+  .command("find <keyword>")
+  .description("Find MCP servers from curated registry data")
+  .option(
+    "-g, --global",
+    "Install globally (user-level) instead of project-level",
+  )
+  .option("-a, --agent <agent>", "Specify agents to install to", collect, [])
+  .option(
+    "-n, --name <name>",
+    "Server name override (defaults to catalog entry name)",
+  )
+  .option("-y, --yes", "Skip confirmation prompts")
+  .option("--all", "Install to all agents")
+  .option(
+    "--gitignore",
+    "Add generated project config files to .gitignore",
+  )
+  .action(async (keyword: string, options: Options | { opts: () => Options }) => {
+    await runFindCommand(keyword, options);
+  });
+
+program
+  .command("search <keyword>")
+  .description("Alias for find")
+  .option(
+    "-g, --global",
+    "Install globally (user-level) instead of project-level",
+  )
+  .option("-a, --agent <agent>", "Specify agents to install to", collect, [])
+  .option(
+    "-n, --name <name>",
+    "Server name override (defaults to catalog entry name)",
+  )
+  .option("-y, --yes", "Skip confirmation prompts")
+  .option("--all", "Install to all agents")
+  .option(
+    "--gitignore",
+    "Add generated project config files to .gitignore",
+  )
+  .action(async (keyword: string, options: Options | { opts: () => Options }) => {
+    await runFindCommand(keyword, options);
   });
 
 program.parse();
@@ -297,6 +442,9 @@ async function main(target: string | undefined, options: Options) {
     );
     console.log(
       `  ${DIM}$${RESET} ${TEXT}npx add-mcp ${DIM}<url> ${TEXT}-a cursor${RESET}    ${DIM}Install to specific agent${RESET}`,
+    );
+    console.log(
+      `  ${DIM}$${RESET} ${TEXT}npx add-mcp find ${DIM}<keyword>${RESET}     ${DIM}Search and install curated MCP servers${RESET}`,
     );
     console.log();
     console.log(
