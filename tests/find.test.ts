@@ -5,6 +5,8 @@ import {
   buildInstallPlanForEntry,
   buildPlaceholderValue,
   collectPromptValues,
+  formatFindResultRow,
+  rankRegistryEntries,
   resolveTemplateUrl,
   searchRegistry,
 } from "../src/find.js";
@@ -42,6 +44,7 @@ const officialServersFixture: RegistryServerEntry[] = [
     title: "Atlassian Rovo MCP Server",
     description: "Atlassian Rovo MCP Server",
     version: "1.1.1",
+    repositoryUrl: "https://github.com/atlassian/atlassian-mcp-server",
     remotes: [
       { type: "streamable-http", url: "https://mcp.atlassian.com/v1/mcp" },
       { type: "sse", url: "https://mcp.atlassian.com/v1/sse" },
@@ -174,7 +177,17 @@ test("searchRegistry maps API response entries", async () => {
     ({
       ok: true,
       json: async () => ({
-        servers: officialServersFixture.map((entry) => ({ server: entry })),
+        servers: officialServersFixture.map((entry) => ({
+          server: {
+            ...entry,
+            repository: entry.repositoryUrl
+              ? {
+                  url: entry.repositoryUrl,
+                  source: "github",
+                }
+              : undefined,
+          },
+        })),
       }),
     }) as Response) as typeof fetch;
 
@@ -190,6 +203,12 @@ test("searchRegistry maps API response entries", async () => {
         (entry) => entry.name === "io.github.github/github-mcp-server",
       ),
       true,
+    );
+    assert.strictEqual(
+      results.find(
+        (entry) => entry.name === "com.atlassian/atlassian-mcp-server",
+      )?.repositoryUrl,
+      "https://github.com/atlassian/atlassian-mcp-server",
     );
   } finally {
     globalThis.fetch = originalFetch;
@@ -212,6 +231,70 @@ test("searchRegistry throws on non-ok response", async () => {
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("rankRegistryEntries prioritizes official GitHub over smithery noise", () => {
+  const ranked = rankRegistryEntries("github", [
+    {
+      name: "ai.smithery/Hint-Services-obsidian-github-mcp",
+      description: "Community server",
+      version: "1.0.0",
+    },
+    {
+      name: "io.github.github/github-mcp-server",
+      title: "GitHub",
+      description: "Official GitHub MCP server",
+      version: "0.31.0",
+    },
+  ]);
+
+  assert.strictEqual(ranked[0]?.name, "io.github.github/github-mcp-server");
+});
+
+test("rankRegistryEntries prioritizes official Supabase over smithery entries", () => {
+  const ranked = rankRegistryEntries("supa", [
+    {
+      name: "ai.smithery/supa-community-fork",
+      description: "Community Supabase tool",
+      version: "1.0.0",
+    },
+    {
+      name: "com.supabase/mcp",
+      title: "Supabase",
+      description: "MCP server for interacting with Supabase",
+      version: "0.6.3",
+    },
+    {
+      name: "io.github.someone/supabase-helper",
+      description: "Third-party helper",
+      version: "1.0.0",
+    },
+  ]);
+
+  assert.strictEqual(ranked[0]?.name, "com.supabase/mcp");
+});
+
+test("formatFindResultRow prints name, install target, and github URL", () => {
+  const row = formatFindResultRow({
+    name: "com.supabase/mcp",
+    description: "MCP server for interacting with Supabase",
+    version: "0.6.3",
+    repositoryUrl: "https://github.com/supabase-community/supabase-mcp",
+    remotes: [{ type: "streamable-http", url: "https://mcp.supabase.com/mcp" }],
+    packages: [
+      {
+        registryType: "npm",
+        identifier: "@supabase/mcp-server-supabase",
+        version: "0.6.3",
+        transport: { type: "stdio" },
+      },
+    ],
+  });
+
+  assert.strictEqual(
+    row,
+    "com.supabase/mcp | https://mcp.supabase.com/mcp | https://github.com/supabase-community/supabase-mcp",
+  );
 });
 
 test("buildInstallPlanForEntry defaults to remote in -y for hybrid entries", async () => {

@@ -39,6 +39,7 @@ export interface RegistryServerEntry {
   title?: string;
   description: string;
   version: string;
+  repositoryUrl?: string;
   remotes?: RegistryRemoteDefinition[];
   packages?: RegistryPackageDefinition[];
 }
@@ -77,6 +78,24 @@ function tokenize(value: string): string[] {
     .filter((token) => token.length > 0);
 }
 
+const TRUSTED_NAMESPACE_PREFIXES = [
+  "com.supabase/",
+  "io.github.github/",
+  "com.postman/",
+  "com.stripe/",
+  "com.vercel/",
+  "io.github.vercel/",
+  "com.notion/",
+  "app.linear/",
+  "com.atlassian/",
+  "com.cloudflare.",
+  "io.github.getsentry/",
+  "io.github.mongodb-js/",
+  "io.github.railwayapp/",
+];
+
+const NOISY_NAMESPACE_PREFIXES = ["ai.smithery/"];
+
 export function resolveTemplateUrl(
   templateUrl: string,
   values: Record<string, string>,
@@ -85,6 +104,56 @@ export function resolveTemplateUrl(
     const key = String(rawName);
     const replacement = values[key];
     return replacement && replacement.length > 0 ? replacement : fullMatch;
+  });
+}
+
+function rankRegistryEntry(query: string, entry: RegistryServerEntry): number {
+  const normalizedQuery = normalize(query);
+  const queryTokens = tokenize(normalizedQuery);
+  const name = normalize(entry.name);
+  const title = normalize(entry.title ?? "");
+  const description = normalize(entry.description);
+  const haystack = `${name} ${title} ${description}`;
+  const haystackTokens = new Set(tokenize(haystack));
+
+  let score = 0;
+
+  // Strong lexical relevance scoring.
+  if (name === normalizedQuery) score += 800;
+  if (name.includes(normalizedQuery)) score += 350;
+  if (title.includes(normalizedQuery)) score += 250;
+  if (description.includes(normalizedQuery)) score += 120;
+
+  for (const token of queryTokens) {
+    if (token.length === 0) continue;
+    if (haystackTokens.has(token)) {
+      score += 60;
+    } else if (token.length >= 3 && haystack.includes(token)) {
+      score += 20;
+    }
+  }
+
+  // Prefer likely official/vendor namespaces.
+  if (TRUSTED_NAMESPACE_PREFIXES.some((prefix) => name.startsWith(prefix))) {
+    score += 500;
+  }
+
+  // Demote noisy aggregators, but keep as fallback.
+  if (NOISY_NAMESPACE_PREFIXES.some((prefix) => name.startsWith(prefix))) {
+    score -= 500;
+  }
+
+  return score;
+}
+
+export function rankRegistryEntries(
+  query: string,
+  entries: RegistryServerEntry[],
+): RegistryServerEntry[] {
+  return [...entries].sort((a, b) => {
+    const scoreDiff = rankRegistryEntry(query, b) - rankRegistryEntry(query, a);
+    if (scoreDiff !== 0) return scoreDiff;
+    return a.name.localeCompare(b.name);
   });
 }
 
@@ -105,6 +174,10 @@ interface RegistryServerListItem {
     title?: string;
     description?: string;
     version?: string;
+    repository?: {
+      url?: string;
+      source?: string;
+    };
     remotes?: RegistryRemoteDefinition[];
     packages?: RegistryPackageDefinition[];
   };
@@ -121,6 +194,7 @@ function toEntry(item: RegistryServerListItem): RegistryServerEntry | null {
     title: server.title,
     description: server.description,
     version: server.version,
+    repositoryUrl: server.repository?.url,
     remotes: server.remotes,
     packages: server.packages,
   };
@@ -189,6 +263,29 @@ function formatPackageTarget(pkg: RegistryPackageDefinition): string {
     return `${pkg.identifier}@${pkg.version}`;
   }
   return pkg.identifier;
+}
+
+function preferredRemoteUrl(entry: RegistryServerEntry): string | null {
+  const remotes = entry.remotes ?? [];
+  if (remotes.length === 0) return null;
+  const streamable = remotes.find(
+    (remote) => remote.type === "streamable-http",
+  );
+  return streamable?.url ?? remotes[0]?.url ?? null;
+}
+
+function preferredPackageName(entry: RegistryServerEntry): string | null {
+  const pkg = pickPackage(entry);
+  return pkg ? formatPackageTarget(pkg) : null;
+}
+
+export function formatFindResultRow(entry: RegistryServerEntry): string {
+  const installTarget =
+    preferredRemoteUrl(entry) ??
+    preferredPackageName(entry) ??
+    "(no install target)";
+  const githubUrl = entry.repositoryUrl ?? "(no github url)";
+  return `${entry.name} | ${installTarget} | ${githubUrl}`;
 }
 
 async function promptValue(field: PromptField): Promise<string | symbol> {
@@ -374,19 +471,21 @@ export async function runFind(
     return null;
   }
 
+  const rankedEntries = rankRegistryEntries(query, entries);
+
   const entry: RegistryServerEntry | null = options.yes
-    ? (entries[0] ?? null)
+    ? (rankedEntries[0] ?? null)
     : await (async () => {
         const selected = await p.select({
           message: `Find MCP servers for "${query}"`,
-          options: entries.slice(0, 15).map((entryOption) => ({
+          options: rankedEntries.slice(0, 15).map((entryOption) => ({
             value: entryOption.name,
-            label: entryOption.title ?? entryOption.name,
-            hint: entryOption.description,
+            label: formatFindResultRow(entryOption),
+            hint: entryOption.title ?? entryOption.description,
           })),
         });
         if (p.isCancel(selected)) return null;
-        return entries.find((result) => result.name === selected) ?? null;
+        return rankedEntries.find((result) => result.name === selected) ?? null;
       })();
 
   if (!entry) {
