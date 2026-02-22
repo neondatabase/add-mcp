@@ -1,13 +1,47 @@
 import * as p from "@clack/prompts";
 import type { TransportType } from "./types.js";
-import type {
-  RegistryCatalogServer,
-  RegistryHeaderDefinition,
-  RegistryPackageDefinition,
-  RegistryRemoteDefinition,
-  RegistryVariableDefinition,
-} from "./registry-catalog.js";
-import { REGISTRY_CATALOG } from "./registry-catalog.js";
+
+export type RegistryRemoteTransport = "streamable-http" | "sse";
+
+export interface RegistryVariableDefinition {
+  description?: string;
+  isRequired?: boolean;
+  isSecret?: boolean;
+  default?: string;
+  choices?: string[];
+}
+
+export interface RegistryHeaderDefinition {
+  name: string;
+  description?: string;
+  isRequired?: boolean;
+  isSecret?: boolean;
+}
+
+export interface RegistryRemoteDefinition {
+  type: RegistryRemoteTransport;
+  url: string;
+  variables?: Record<string, RegistryVariableDefinition>;
+  headers?: RegistryHeaderDefinition[];
+}
+
+export interface RegistryPackageDefinition {
+  registryType: "npm" | "oci" | "nuget" | "mcpb";
+  identifier: string;
+  version?: string;
+  transport: {
+    type: "stdio";
+  };
+}
+
+export interface RegistryServerEntry {
+  name: string;
+  title?: string;
+  description: string;
+  version: string;
+  remotes?: RegistryRemoteDefinition[];
+  packages?: RegistryPackageDefinition[];
+}
 
 export interface FindCommandOptions {
   yes?: boolean;
@@ -18,11 +52,6 @@ export interface FindInstallPlan {
   serverName: string;
   transport?: TransportType;
   headers?: Record<string, string>;
-}
-
-export interface SearchResult {
-  entry: RegistryCatalogServer;
-  score: number;
 }
 
 export interface PromptField {
@@ -59,45 +88,64 @@ export function resolveTemplateUrl(
   });
 }
 
-function scoreEntry(entry: RegistryCatalogServer, query: string): number {
-  const q = normalize(query);
-  if (!q) return 0;
-
-  const name = normalize(entry.name);
-  const title = normalize(entry.title ?? "");
-  const description = normalize(entry.description);
-  const haystack = `${name} ${title} ${description}`;
-
-  let score = 0;
-  if (name === q) score += 200;
-  if (name.includes(q)) score += 120;
-  if (title.includes(q)) score += 80;
-  if (description.includes(q)) score += 50;
-
-  const queryTokens = tokenize(q);
-  const haystackTokens = new Set(tokenize(haystack));
-  for (const token of queryTokens) {
-    if (haystackTokens.has(token)) {
-      score += 20;
-    } else if (token.length >= 3 && haystack.includes(token)) {
-      score += 8;
-    }
-  }
-
-  return score;
+interface RegistryServerListResponse {
+  servers?: RegistryServerListItem[];
 }
 
-export function searchCatalog(
-  query: string,
-  catalog: RegistryCatalogServer[] = REGISTRY_CATALOG,
-): SearchResult[] {
-  return catalog
-    .map((entry) => ({ entry, score: scoreEntry(entry, query) }))
-    .filter((result) => result.score > 0)
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return a.entry.name.localeCompare(b.entry.name);
-    });
+function getRegistryApiBase(): string {
+  return process.env.MCP_REGISTRY_API_URL || "https://registry.modelcontextprotocol.io";
+}
+
+interface RegistryServerListItem {
+  server?: {
+    name?: string;
+    title?: string;
+    description?: string;
+    version?: string;
+    remotes?: RegistryRemoteDefinition[];
+    packages?: RegistryPackageDefinition[];
+  };
+}
+
+function toEntry(item: RegistryServerListItem): RegistryServerEntry | null {
+  const server = item?.server;
+  if (!server?.name || !server?.description || !server?.version) {
+    return null;
+  }
+
+  return {
+    name: server.name,
+    title: server.title,
+    description: server.description,
+    version: server.version,
+    remotes: server.remotes,
+    packages: server.packages,
+  };
+}
+
+export async function searchRegistry(query: string): Promise<RegistryServerEntry[]> {
+  const trimmedQuery = normalize(query);
+  if (!trimmedQuery) return [];
+
+  const params = new URLSearchParams({
+    search: trimmedQuery,
+    version: "latest",
+    limit: "30",
+  });
+  const url = `${getRegistryApiBase()}/v0.1/servers?${params.toString()}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Registry API request failed (${response.status})`);
+  }
+
+  const payload = (await response.json()) as RegistryServerListResponse;
+  const entries: RegistryServerEntry[] = [];
+  for (const item of payload.servers ?? []) {
+    const entry = toEntry(item);
+    if (!entry) continue;
+    entries.push(entry);
+  }
+  return entries;
 }
 
 function toServerName(entryName: string): string {
@@ -109,14 +157,14 @@ function remoteToTransport(type: RegistryRemoteDefinition["type"]): TransportTyp
   return type === "sse" ? "sse" : "http";
 }
 
-function pickRemote(entry: RegistryCatalogServer): RegistryRemoteDefinition | null {
+function pickRemote(entry: RegistryServerEntry): RegistryRemoteDefinition | null {
   const remotes = entry.remotes ?? [];
   if (remotes.length === 0) return null;
   const streamable = remotes.find((remote) => remote.type === "streamable-http");
   return streamable ?? remotes[0] ?? null;
 }
 
-function pickPackage(entry: RegistryCatalogServer): RegistryPackageDefinition | null {
+function pickPackage(entry: RegistryServerEntry): RegistryPackageDefinition | null {
   const packages = entry.packages ?? [];
   if (packages.length === 0) return null;
   const npm = packages.find((pkg) => pkg.registryType === "npm");
@@ -226,7 +274,7 @@ async function resolveInteractiveRemote(
 }
 
 export async function buildInstallPlanForEntry(
-  entry: RegistryCatalogServer,
+  entry: RegistryServerEntry,
   options: FindCommandOptions,
 ): Promise<FindInstallPlan | null> {
   const remote = pickRemote(entry);
@@ -283,25 +331,34 @@ export async function runFind(
   query: string,
   options: FindCommandOptions,
 ): Promise<FindInstallPlan | null> {
-  const results = searchCatalog(query);
-  if (results.length === 0) {
+  let entries: RegistryServerEntry[];
+  try {
+    entries = await searchRegistry(query);
+  } catch (error) {
+    p.log.error(
+      `Failed to query MCP registry: ${error instanceof Error ? error.message : "unknown error"}`,
+    );
+    return null;
+  }
+
+  if (entries.length === 0) {
     p.log.warn(`No MCP servers found for "${query}"`);
     return null;
   }
 
-  const entry = options.yes
-    ? results[0]?.entry
+  const entry: RegistryServerEntry | null = options.yes
+    ? entries[0] ?? null
     : await (async () => {
         const selected = await p.select({
           message: `Find MCP servers for "${query}"`,
-          options: results.slice(0, 15).map((result) => ({
-            value: result.entry.name,
-            label: result.entry.title ?? result.entry.name,
-            hint: result.entry.description,
+          options: entries.slice(0, 15).map((entryOption) => ({
+            value: entryOption.name,
+            label: entryOption.title ?? entryOption.name,
+            hint: entryOption.description,
           })),
         });
         if (p.isCancel(selected)) return null;
-        return results.find((result) => result.entry.name === selected)?.entry ?? null;
+        return entries.find((result) => result.name === selected) ?? null;
       })();
 
   if (!entry) {

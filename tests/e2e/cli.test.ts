@@ -114,34 +114,6 @@ test("E2E CLI: --gitignore with --global warns and does not write project .gitig
   assert.strictEqual(existsSync(join(homeDir, ".cursor", "mcp.json")), true);
 });
 
-test("E2E CLI: find -y picks best match and installs remote with placeholders", () => {
-  const projectDir = createTempDir();
-  const homeDir = createTempDir();
-
-  const result = runCli(
-    ["find", "postman", "-a", "cursor", "-y"],
-    projectDir,
-    homeDir,
-  );
-
-  if (result.status !== 0) {
-    throw new Error(`CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`);
-  }
-
-  const configPath = join(projectDir, ".cursor", "mcp.json");
-  assert.strictEqual(existsSync(configPath), true);
-
-  const savedConfig = JSON.parse(readFileSync(configPath, "utf-8")) as {
-    mcpServers?: Record<string, { url?: string; headers?: Record<string, string> }>;
-  };
-  const postmanConfig = savedConfig.mcpServers?.["postman-mcp-server"];
-  assert.ok(postmanConfig);
-  assert.strictEqual(postmanConfig?.url, "https://mcp.postman.com/mcp");
-  assert.deepStrictEqual(postmanConfig?.headers, {
-    Authorization: "<your-header-value-here>",
-  });
-});
-
 cleanup();
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

@@ -6,9 +6,9 @@ import {
   buildPlaceholderValue,
   collectPromptValues,
   resolveTemplateUrl,
-  searchCatalog,
+  searchRegistry,
 } from "../src/find.js";
-import type { RegistryCatalogServer } from "../src/registry-catalog.js";
+import type { RegistryServerEntry } from "../src/find.js";
 
 let passed = 0;
 let failed = 0;
@@ -27,7 +27,7 @@ function test(name: string, fn: () => void | Promise<void>) {
     });
 }
 
-const catalogFixture: RegistryCatalogServer[] = [
+const catalogFixture: RegistryServerEntry[] = [
   {
     name: "com.supabase/mcp",
     title: "Supabase",
@@ -57,15 +57,41 @@ const catalogFixture: RegistryCatalogServer[] = [
   },
 ];
 
-test("searchCatalog ranks stronger name match first", () => {
-  const results = searchCatalog("supabase", catalogFixture);
-  assert.strictEqual(results.length > 0, true);
-  assert.strictEqual(results[0]?.entry.name, "com.supabase/mcp");
+test("searchRegistry maps API response entries", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    ({
+      ok: true,
+      json: async () => ({
+        servers: catalogFixture.map((entry) => ({ server: entry })),
+      }),
+    }) as Response) as typeof fetch;
+
+  try {
+    const results = await searchRegistry("supabase");
+    assert.strictEqual(results.length, 2);
+    assert.strictEqual(results[0]?.name, "com.supabase/mcp");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
-test("searchCatalog returns empty list when no matches", () => {
-  const results = searchCatalog("definitely-not-a-match", catalogFixture);
-  assert.strictEqual(results.length, 0);
+test("searchRegistry throws on non-ok response", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    ({
+      ok: false,
+      status: 500,
+      json: async () => ({}),
+    }) as Response) as typeof fetch;
+
+  try {
+    await assert.rejects(async () => {
+      await searchRegistry("supabase");
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("buildInstallPlanForEntry defaults to remote in -y for hybrid entries", async () => {
