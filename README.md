@@ -112,7 +112,7 @@ Besides the implicit add command, `add-mcp` also supports the following commands
 npx add-mcp list-agents
 
 # Search registry servers and install
-npx add-mcp find supabase
+npx add-mcp find notion
 ```
 
 ### Installation Scope
