@@ -297,6 +297,17 @@ test("formatFindResultRow prints name, install target, and github URL", () => {
   );
 });
 
+test("formatFindResultRow leaves github column empty when missing", () => {
+  const row = formatFindResultRow({
+    name: "com.example/no-repo",
+    description: "No repository metadata",
+    version: "1.0.0",
+    remotes: [{ type: "streamable-http", url: "https://example.com/mcp" }],
+  });
+
+  assert.strictEqual(row, "com.example/no-repo | https://example.com/mcp | ");
+});
+
 test("buildInstallPlanForEntry defaults to remote in -y for hybrid entries", async () => {
   const hybridEntry = officialServersFixture.find(
     (entry) => entry.name === "com.supabase/mcp",

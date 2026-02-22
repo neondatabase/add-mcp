@@ -284,7 +284,7 @@ export function formatFindResultRow(entry: RegistryServerEntry): string {
     preferredRemoteUrl(entry) ??
     preferredPackageName(entry) ??
     "(no install target)";
-  const githubUrl = entry.repositoryUrl ?? "(no github url)";
+  const githubUrl = entry.repositoryUrl ?? "";
   return `${entry.name} | ${installTarget} | ${githubUrl}`;
 }
 
