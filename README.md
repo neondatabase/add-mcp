@@ -71,7 +71,7 @@ npx add-mcp https://mcp.example.com/mcp -a cursor -y --gitignore
 | `-n, --name <name>`      | Server name (auto-inferred if not provided)                              |
 | `-y, --yes`              | Skip all confirmation prompts                                            |
 | `--all`                  | Install to all agents                                                    |
-| `--gitignore`            | Add generated config files to `.gitignore`                                |
+| `--gitignore`            | Add generated config files to `.gitignore`                               |
 
 ### Additional Commands
 
@@ -102,12 +102,12 @@ The CLI automatically detects agents based on your environment:
 - Detects project-level config files (`.cursor/`, `.vscode/`, `.mcp.json`, etc.)
 - Selects detected agents (have project config in the current directory) by default
 - Shows detected agents plus all other supported agents for selection
-- Installs to project-level config files
 
 **With `-g` (global mode):**
 
 - Detects all globally-installed agents (including Claude Desktop, Codex, Zed)
-- All agents use global config
+- Selects detected agents by default
+- Shows detected agents plus all other supported agents for selection
 
 **No agents detected:**
 
@@ -130,10 +130,7 @@ Note that some agents like Cursor and opencode do not require the `type` informa
 ## HTTP Headers
 
 Use `--header` to pass custom headers for remote servers. The flag can be repeated.
-If you explicitly select agents that don't support headers, the install will error. Auto-detected installs skip unsupported agents with a warning.
-
-Agents that support headers: Claude Code, Claude Desktop, Codex, Cursor, Gemini CLI, OpenCode, VS Code, Zed.
-Agents that do not support headers: Goose.
+Header support is available for remote installs across all supported agents.
 
 ## Supported Agents
 

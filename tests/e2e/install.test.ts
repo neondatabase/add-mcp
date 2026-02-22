@@ -397,6 +397,29 @@ test("E2E: Install to Goose (YAML format, transformed) - remote server (http)", 
   assert.strictEqual((transformed as Record<string, unknown>).enabled, true);
 });
 
+test("E2E: Install to Goose (YAML format, transformed) - remote server (http) with headers", () => {
+  const parsed = parseSource("https://mcp.example.com/mcp");
+  const config = buildServerConfig(parsed, {
+    headers: {
+      Authorization: "Bearer token",
+      "x-read-only": "true",
+    },
+  });
+
+  const gooseAgent = agents.goose;
+  const transformed = gooseAgent.transformConfig!("example", config) as Record<
+    string,
+    unknown
+  >;
+
+  assert.strictEqual(transformed.type, "streamable_http");
+  assert.strictEqual(transformed.uri, "https://mcp.example.com/mcp");
+  assert.deepStrictEqual(transformed.headers, {
+    Authorization: "Bearer token",
+    "x-read-only": "true",
+  });
+});
+
 test("E2E: Install to Goose (YAML format, transformed) - remote server (sse)", () => {
   const parsed = parseSource("https://mcp.example.com/sse");
   const config = buildServerConfig(parsed, { transport: "sse" });
@@ -416,6 +439,28 @@ test("E2E: Install to Goose (YAML format, transformed) - remote server (sse)", (
     "https://mcp.example.com/sse",
   );
   assert.strictEqual((transformed as Record<string, unknown>).enabled, true);
+});
+
+test("E2E: Install to Goose (YAML format, transformed) - remote server (sse) with headers", () => {
+  const parsed = parseSource("https://mcp.example.com/sse");
+  const config = buildServerConfig(parsed, {
+    transport: "sse",
+    headers: {
+      Authorization: "Bearer token",
+    },
+  });
+
+  const gooseAgent = agents.goose;
+  const transformed = gooseAgent.transformConfig!(
+    "example-sse",
+    config,
+  ) as Record<string, unknown>;
+
+  assert.strictEqual(transformed.type, "sse");
+  assert.strictEqual(transformed.uri, "https://mcp.example.com/sse");
+  assert.deepStrictEqual(transformed.headers, {
+    Authorization: "Bearer token",
+  });
 });
 
 test("E2E: Write YAML config file (Goose format)", () => {
