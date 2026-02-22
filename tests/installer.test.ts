@@ -347,14 +347,19 @@ test("updateGitignoreWithPaths - creates .gitignore when missing", () => {
   assert.deepStrictEqual(result.added, [".cursor/mcp.json"]);
   const gitignorePath = join(tempDir, ".gitignore");
   assert.strictEqual(existsSync(gitignorePath), true);
-  assert.strictEqual(readFileSync(gitignorePath, "utf-8"), ".cursor/mcp.json\n");
+  assert.strictEqual(
+    readFileSync(gitignorePath, "utf-8"),
+    ".cursor/mcp.json\n",
+  );
 });
 
 test("updateGitignoreWithPaths - appends only new local paths", () => {
   const tempDir = createTempDir();
   const gitignorePath = join(tempDir, ".gitignore");
 
-  updateGitignoreWithPaths([join(tempDir, ".cursor", "mcp.json")], { cwd: tempDir });
+  updateGitignoreWithPaths([join(tempDir, ".cursor", "mcp.json")], {
+    cwd: tempDir,
+  });
   const result = updateGitignoreWithPaths(
     [
       join(tempDir, ".cursor", "mcp.json"),

@@ -71,7 +71,7 @@ npx add-mcp https://mcp.example.com/mcp -a cursor -y --gitignore
 | `-n, --name <name>`      | Server name (auto-inferred if not provided)                              |
 | `-y, --yes`              | Skip all confirmation prompts                                            |
 | `--all`                  | Install to all agents                                                    |
-| `--gitignore`            | Add generated config files to `.gitignore`                                |
+| `--gitignore`            | Add generated config files to `.gitignore`                               |
 
 ### Additional Commands
 

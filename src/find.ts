@@ -93,7 +93,10 @@ interface RegistryServerListResponse {
 }
 
 function getRegistryApiBase(): string {
-  return process.env.MCP_REGISTRY_API_URL || "https://registry.modelcontextprotocol.io";
+  return (
+    process.env.MCP_REGISTRY_API_URL ||
+    "https://registry.modelcontextprotocol.io"
+  );
 }
 
 interface RegistryServerListItem {
@@ -123,7 +126,9 @@ function toEntry(item: RegistryServerListItem): RegistryServerEntry | null {
   };
 }
 
-export async function searchRegistry(query: string): Promise<RegistryServerEntry[]> {
+export async function searchRegistry(
+  query: string,
+): Promise<RegistryServerEntry[]> {
   const trimmedQuery = normalize(query);
   if (!trimmedQuery) return [];
 
@@ -153,18 +158,26 @@ function toServerName(entryName: string): string {
   return parts[parts.length - 1] || entryName;
 }
 
-function remoteToTransport(type: RegistryRemoteDefinition["type"]): TransportType {
+function remoteToTransport(
+  type: RegistryRemoteDefinition["type"],
+): TransportType {
   return type === "sse" ? "sse" : "http";
 }
 
-function pickRemote(entry: RegistryServerEntry): RegistryRemoteDefinition | null {
+function pickRemote(
+  entry: RegistryServerEntry,
+): RegistryRemoteDefinition | null {
   const remotes = entry.remotes ?? [];
   if (remotes.length === 0) return null;
-  const streamable = remotes.find((remote) => remote.type === "streamable-http");
+  const streamable = remotes.find(
+    (remote) => remote.type === "streamable-http",
+  );
   return streamable ?? remotes[0] ?? null;
 }
 
-function pickPackage(entry: RegistryServerEntry): RegistryPackageDefinition | null {
+function pickPackage(
+  entry: RegistryServerEntry,
+): RegistryPackageDefinition | null {
   const packages = entry.packages ?? [];
   if (packages.length === 0) return null;
   const npm = packages.find((pkg) => pkg.registryType === "npm");
@@ -228,7 +241,9 @@ function variableFields(
   }));
 }
 
-function headerFields(headers: RegistryHeaderDefinition[] | undefined): PromptField[] {
+function headerFields(
+  headers: RegistryHeaderDefinition[] | undefined,
+): PromptField[] {
   if (!headers) return [];
   return headers.map((header) => ({
     key: header.name,
@@ -238,9 +253,10 @@ function headerFields(headers: RegistryHeaderDefinition[] | undefined): PromptFi
   }));
 }
 
-function resolveNonInteractiveRemote(
-  remote: RegistryRemoteDefinition,
-): { url: string; headers?: Record<string, string> } {
+function resolveNonInteractiveRemote(remote: RegistryRemoteDefinition): {
+  url: string;
+  headers?: Record<string, string>;
+} {
   const variableValues: Record<string, string> = {};
   for (const key of Object.keys(remote.variables ?? {})) {
     variableValues[key] = buildPlaceholderValue("variable");
@@ -260,16 +276,24 @@ function resolveNonInteractiveRemote(
 async function resolveInteractiveRemote(
   remote: RegistryRemoteDefinition,
 ): Promise<{ url: string; headers?: Record<string, string> } | null> {
-  const variableResult = await collectPromptValues(variableFields(remote.variables), promptValue);
+  const variableResult = await collectPromptValues(
+    variableFields(remote.variables),
+    promptValue,
+  );
   if (variableResult.cancelled) return null;
 
-  const headerResult = await collectPromptValues(headerFields(remote.headers), promptValue);
+  const headerResult = await collectPromptValues(
+    headerFields(remote.headers),
+    promptValue,
+  );
   if (headerResult.cancelled) return null;
 
   return {
     url: resolveTemplateUrl(remote.url, variableResult.values),
     headers:
-      Object.keys(headerResult.values).length > 0 ? headerResult.values : undefined,
+      Object.keys(headerResult.values).length > 0
+        ? headerResult.values
+        : undefined,
   };
 }
 
@@ -296,7 +320,11 @@ export async function buildInstallPlanForEntry(
         initialValue: "remote",
         options: [
           { value: "remote", label: "Remote", hint: "Recommended default" },
-          { value: "package", label: "Stdio package", hint: "Local stdio package" },
+          {
+            value: "package",
+            label: "Stdio package",
+            hint: "Local stdio package",
+          },
         ],
       });
       if (p.isCancel(selected)) return null;
@@ -347,7 +375,7 @@ export async function runFind(
   }
 
   const entry: RegistryServerEntry | null = options.yes
-    ? entries[0] ?? null
+    ? (entries[0] ?? null)
     : await (async () => {
         const selected = await p.select({
           message: `Find MCP servers for "${query}"`,

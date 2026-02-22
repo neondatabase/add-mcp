@@ -27,7 +27,34 @@ function test(name: string, fn: () => void | Promise<void>) {
     });
 }
 
-const catalogFixture: RegistryServerEntry[] = [
+const officialServersFixture: RegistryServerEntry[] = [
+  {
+    name: "app.linear/linear",
+    description: "MCP server for Linear project management and issue tracking",
+    version: "1.0.0",
+    remotes: [
+      { type: "streamable-http", url: "https://mcp.linear.app/mcp" },
+      { type: "sse", url: "https://mcp.linear.app/sse" },
+    ],
+  },
+  {
+    name: "com.atlassian/atlassian-mcp-server",
+    title: "Atlassian Rovo MCP Server",
+    description: "Atlassian Rovo MCP Server",
+    version: "1.1.1",
+    remotes: [
+      { type: "streamable-http", url: "https://mcp.atlassian.com/v1/mcp" },
+      { type: "sse", url: "https://mcp.atlassian.com/v1/sse" },
+    ],
+  },
+  {
+    name: "com.cloudflare.mcp/mcp",
+    description: "Cloudflare MCP servers",
+    version: "1.0.0",
+    remotes: [
+      { type: "streamable-http", url: "https://docs.mcp.cloudflare.com/mcp" },
+    ],
+  },
   {
     name: "com.supabase/mcp",
     title: "Supabase",
@@ -44,6 +71,51 @@ const catalogFixture: RegistryServerEntry[] = [
     ],
   },
   {
+    name: "com.vercel/vercel-mcp",
+    description: "An MCP server for Vercel",
+    version: "0.0.3",
+    remotes: [{ type: "streamable-http", url: "https://mcp.vercel.com" }],
+  },
+  {
+    name: "com.stripe/mcp",
+    description: "MCP server integrating with Stripe",
+    version: "0.2.4",
+    remotes: [{ type: "streamable-http", url: "https://mcp.stripe.com" }],
+  },
+  {
+    name: "com.notion/mcp",
+    description: "Official Notion MCP server",
+    version: "1.0.1",
+    remotes: [{ type: "streamable-http", url: "https://mcp.notion.com/mcp" }],
+  },
+  {
+    name: "com.postman/postman-mcp-server",
+    description: "Postman MCP server for Postman API workflows",
+    version: "2.7.0",
+    remotes: [{ type: "streamable-http", url: "https://mcp.postman.com/mcp" }],
+    packages: [
+      {
+        registryType: "npm",
+        identifier: "@postman/postman-mcp-server",
+        version: "2.7.0",
+        transport: { type: "stdio" },
+      },
+    ],
+  },
+  {
+    name: "io.github.getsentry/sentry-mcp",
+    description: "MCP server for Sentry issue tracking and debugging",
+    version: "0.25.0",
+    packages: [
+      {
+        registryType: "npm",
+        identifier: "@sentry/mcp-server",
+        version: "0.25.0",
+        transport: { type: "stdio" },
+      },
+    ],
+  },
+  {
     name: "io.github.github/github-mcp-server",
     title: "GitHub",
     description: "Official GitHub MCP server",
@@ -55,6 +127,45 @@ const catalogFixture: RegistryServerEntry[] = [
       },
     ],
   },
+  {
+    name: "io.github.mongodb-js/mongodb-mcp-server",
+    description: "MongoDB Model Context Protocol server",
+    version: "1.6.0",
+    packages: [
+      {
+        registryType: "npm",
+        identifier: "mongodb-mcp-server",
+        version: "1.6.0",
+        transport: { type: "stdio" },
+      },
+    ],
+  },
+  {
+    name: "io.github.railwayapp/mcp-server",
+    description: "Official Railway MCP server",
+    version: "0.1.5",
+    packages: [
+      {
+        registryType: "npm",
+        identifier: "@railway/mcp-server",
+        version: "0.1.5",
+        transport: { type: "stdio" },
+      },
+    ],
+  },
+  {
+    name: "io.github.vercel/next-devtools-mcp",
+    description: "Next.js development tools MCP server with stdio transport",
+    version: "0.3.6",
+    packages: [
+      {
+        registryType: "npm",
+        identifier: "next-devtools-mcp",
+        version: "0.3.6",
+        transport: { type: "stdio" },
+      },
+    ],
+  },
 ];
 
 test("searchRegistry maps API response entries", async () => {
@@ -63,14 +174,23 @@ test("searchRegistry maps API response entries", async () => {
     ({
       ok: true,
       json: async () => ({
-        servers: catalogFixture.map((entry) => ({ server: entry })),
+        servers: officialServersFixture.map((entry) => ({ server: entry })),
       }),
     }) as Response) as typeof fetch;
 
   try {
     const results = await searchRegistry("supabase");
-    assert.strictEqual(results.length, 2);
-    assert.strictEqual(results[0]?.name, "com.supabase/mcp");
+    assert.strictEqual(results.length, officialServersFixture.length);
+    assert.strictEqual(
+      results.some((entry) => entry.name === "com.supabase/mcp"),
+      true,
+    );
+    assert.strictEqual(
+      results.some(
+        (entry) => entry.name === "io.github.github/github-mcp-server",
+      ),
+      true,
+    );
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -95,16 +215,23 @@ test("searchRegistry throws on non-ok response", async () => {
 });
 
 test("buildInstallPlanForEntry defaults to remote in -y for hybrid entries", async () => {
-  const plan = await buildInstallPlanForEntry(catalogFixture[0]!, { yes: true });
+  const hybridEntry = officialServersFixture.find(
+    (entry) => entry.name === "com.supabase/mcp",
+  );
+  assert.ok(hybridEntry);
+  const plan = await buildInstallPlanForEntry(hybridEntry!, { yes: true });
   assert.ok(plan);
   assert.strictEqual(plan?.target, "https://mcp.supabase.com/mcp");
   assert.strictEqual(plan?.transport, "http");
 });
 
 test("resolveTemplateUrl replaces provided variables only", () => {
-  const resolved = resolveTemplateUrl("https://{tenant}.example.com/{region}/mcp", {
-    tenant: "acme",
-  });
+  const resolved = resolveTemplateUrl(
+    "https://{tenant}.example.com/{region}/mcp",
+    {
+      tenant: "acme",
+    },
+  );
   assert.strictEqual(resolved, "https://acme.example.com/{region}/mcp");
 });
 
@@ -139,6 +266,102 @@ test("collectPromptValues enforces required and omits empty optional", async () 
   assert.strictEqual(result.cancelled, false);
   assert.deepStrictEqual(result.values, { project_id: "project-123" });
   assert.deepStrictEqual(calls, ["project_id", "project_id", "Authorization"]);
+});
+
+async function runRequirementMatrixCase(
+  variableRequired: boolean,
+  headerRequired: boolean,
+): Promise<{
+  values: Record<string, string>;
+  calls: string[];
+}> {
+  const calls: string[] = [];
+  const responses: string[] = [];
+
+  // Variable responses
+  if (variableRequired) {
+    responses.push("", "tenant-123");
+  } else {
+    responses.push("");
+  }
+
+  // Header responses
+  if (headerRequired) {
+    responses.push("", "Bearer token");
+  } else {
+    responses.push("");
+  }
+
+  let i = 0;
+  const result = await collectPromptValues(
+    [
+      {
+        key: "tenant_id",
+        label: "Variable tenant_id",
+        isRequired: variableRequired,
+        placeholder: buildPlaceholderValue("variable"),
+      },
+      {
+        key: "Authorization",
+        label: "Header Authorization",
+        isRequired: headerRequired,
+        placeholder: buildPlaceholderValue("header"),
+      },
+    ],
+    async (field) => {
+      calls.push(field.key);
+      const value = responses[i];
+      i += 1;
+      return value ?? "";
+    },
+  );
+
+  assert.strictEqual(result.cancelled, false);
+  return { values: result.values, calls };
+}
+
+test("matrix: variable required + header required", async () => {
+  const result = await runRequirementMatrixCase(true, true);
+  assert.deepStrictEqual(result.values, {
+    tenant_id: "tenant-123",
+    Authorization: "Bearer token",
+  });
+  assert.deepStrictEqual(result.calls, [
+    "tenant_id",
+    "tenant_id",
+    "Authorization",
+    "Authorization",
+  ]);
+});
+
+test("matrix: variable required + header optional", async () => {
+  const result = await runRequirementMatrixCase(true, false);
+  assert.deepStrictEqual(result.values, {
+    tenant_id: "tenant-123",
+  });
+  assert.deepStrictEqual(result.calls, [
+    "tenant_id",
+    "tenant_id",
+    "Authorization",
+  ]);
+});
+
+test("matrix: variable optional + header required", async () => {
+  const result = await runRequirementMatrixCase(false, true);
+  assert.deepStrictEqual(result.values, {
+    Authorization: "Bearer token",
+  });
+  assert.deepStrictEqual(result.calls, [
+    "tenant_id",
+    "Authorization",
+    "Authorization",
+  ]);
+});
+
+test("matrix: variable optional + header optional", async () => {
+  const result = await runRequirementMatrixCase(false, false);
+  assert.deepStrictEqual(result.values, {});
+  assert.deepStrictEqual(result.calls, ["tenant_id", "Authorization"]);
 });
 
 test("buildInstallPlanForEntry injects placeholders in -y mode", async () => {
