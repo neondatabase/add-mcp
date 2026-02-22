@@ -101,8 +101,14 @@ export function updateGitignoreWithPaths(
   const entriesToAdd: string[] = [];
 
   for (const filePath of paths) {
-    const relativePath = isAbsolute(filePath) ? relative(cwd, filePath) : filePath;
-    if (!relativePath || relativePath.startsWith("..") || isAbsolute(relativePath)) {
+    const relativePath = isAbsolute(filePath)
+      ? relative(cwd, filePath)
+      : filePath;
+    if (
+      !relativePath ||
+      relativePath.startsWith("..") ||
+      isAbsolute(relativePath)
+    ) {
       continue;
     }
 
@@ -111,7 +117,11 @@ export function updateGitignoreWithPaths(
       ? normalizedPath.slice(2)
       : normalizedPath;
 
-    if (!cleanPath || cleanPath === ".gitignore" || existingEntries.has(cleanPath)) {
+    if (
+      !cleanPath ||
+      cleanPath === ".gitignore" ||
+      existingEntries.has(cleanPath)
+    ) {
       continue;
     }
 
