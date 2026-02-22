@@ -197,10 +197,7 @@ program
   )
   .option("-y, --yes", "Skip confirmation prompts")
   .option("--all", "Install to all agents")
-  .option(
-    "--gitignore",
-    "Add generated project config files to .gitignore",
-  )
+  .option("--gitignore", "Add generated project config files to .gitignore")
   .action(async (target: string | undefined, options: Options) => {
     await main(target, options);
   });
@@ -549,42 +546,6 @@ async function main(target: string | undefined, options: Options) {
         `The following agents don't support ${requiredTransport} transport: ${unsupportedNames}`,
       );
       process.exit(1);
-    }
-  }
-
-  const hasHeadersForRemote = isRemote && hasHeaderValues;
-  if (hasHeadersForRemote) {
-    const unsupportedHeaderAgents = targetAgents.filter(
-      (a) => !agents[a].supportsHeaders,
-    );
-
-    if (unsupportedHeaderAgents.length > 0) {
-      const unsupportedNames = unsupportedHeaderAgents
-        .map((a) => agents[a].displayName)
-        .join(", ");
-      const hasExplicitAgentSelection =
-        hasExplicitAgentFlags || selectedViaPrompt;
-
-      if (hasExplicitAgentSelection) {
-        p.log.error(
-          `The following agents don't support HTTP headers: ${unsupportedNames}`,
-        );
-        process.exit(1);
-      }
-
-      const supportedAgents = targetAgents.filter(
-        (a) => agents[a].supportsHeaders,
-      );
-
-      if (supportedAgents.length === 0) {
-        p.log.error("No selected agents support HTTP headers");
-        process.exit(1);
-      }
-
-      p.log.warn(
-        `Skipping agents that don't support HTTP headers: ${unsupportedNames}`,
-      );
-      targetAgents = supportedAgents;
     }
   }
 

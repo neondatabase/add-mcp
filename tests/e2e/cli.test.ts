@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import yaml from "js-yaml";
 
 let passed = 0;
 let failed = 0;
@@ -64,24 +65,23 @@ test("E2E CLI: --gitignore adds local config path", () => {
   const homeDir = createTempDir();
 
   const result = runCli(
-    [
-      "https://mcp.example.com/mcp",
-      "-a",
-      "cursor",
-      "-y",
-      "--gitignore",
-    ],
+    ["https://mcp.example.com/mcp", "-a", "cursor", "-y", "--gitignore"],
     projectDir,
     homeDir,
   );
 
   if (result.status !== 0) {
-    throw new Error(`CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`);
+    throw new Error(
+      `CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`,
+    );
   }
 
   const gitignorePath = join(projectDir, ".gitignore");
   assert.strictEqual(existsSync(gitignorePath), true);
-  assert.strictEqual(readFileSync(gitignorePath, "utf-8"), ".cursor/mcp.json\n");
+  assert.strictEqual(
+    readFileSync(gitignorePath, "utf-8"),
+    ".cursor/mcp.json\n",
+  );
 });
 
 test("E2E CLI: --gitignore with --global warns and does not write project .gitignore", () => {
@@ -89,20 +89,15 @@ test("E2E CLI: --gitignore with --global warns and does not write project .gitig
   const homeDir = createTempDir();
 
   const result = runCli(
-    [
-      "https://mcp.example.com/mcp",
-      "-a",
-      "cursor",
-      "-g",
-      "-y",
-      "--gitignore",
-    ],
+    ["https://mcp.example.com/mcp", "-a", "cursor", "-g", "-y", "--gitignore"],
     projectDir,
     homeDir,
   );
 
   if (result.status !== 0) {
-    throw new Error(`CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`);
+    throw new Error(
+      `CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`,
+    );
   }
 
   const combinedOutput = `${result.stdout}\n${result.stderr}`;
@@ -112,6 +107,51 @@ test("E2E CLI: --gitignore with --global warns and does not write project .gitig
   );
   assert.strictEqual(existsSync(join(projectDir, ".gitignore")), false);
   assert.strictEqual(existsSync(join(homeDir, ".cursor", "mcp.json")), true);
+});
+
+test("E2E CLI: Goose HTTP install with headers", () => {
+  const projectDir = createTempDir();
+  const homeDir = createTempDir();
+
+  const result = runCli(
+    [
+      "https://mcp.example.com/mcp",
+      "-a",
+      "goose",
+      "-y",
+      "--name",
+      "example",
+      "--header",
+      "Authorization: Bearer token",
+      "--header",
+      "x-read-only: true",
+    ],
+    projectDir,
+    homeDir,
+  );
+
+  if (result.status !== 0) {
+    throw new Error(
+      `CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`,
+    );
+  }
+
+  const gooseConfigPath = join(homeDir, ".config", "goose", "config.yaml");
+  assert.strictEqual(existsSync(gooseConfigPath), true);
+
+  const saved = yaml.load(readFileSync(gooseConfigPath, "utf-8")) as Record<
+    string,
+    unknown
+  >;
+  const extensions = saved.extensions as Record<string, unknown>;
+  const server = extensions.example as Record<string, unknown>;
+
+  assert.strictEqual(server.type, "streamable_http");
+  assert.strictEqual(server.uri, "https://mcp.example.com/mcp");
+  assert.deepStrictEqual(server.headers, {
+    Authorization: "Bearer token",
+    "x-read-only": "true",
+  });
 });
 
 cleanup();
