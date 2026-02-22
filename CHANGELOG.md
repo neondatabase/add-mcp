@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.0] - 2026-02-21
+
+add `find` and `search` commands backed by the MCP registry API with interactive install selection, hybrid remote/package handling, and required/optional variable + header prompt support
+
 ## [1.2.1] - 2026-02-17
 
 fix Codex remote HTTP header key mapping

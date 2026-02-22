@@ -10,6 +10,30 @@ Supports **Claude Code**, **Codex**, **Cursor**, **OpenCode**, **VSCode** and [5
 npx add-mcp url | package name [options]
 ```
 
+## Find MCP Servers
+
+Search and install servers directly from the MCP registry API:
+
+```bash
+# Interactive search and selection
+npx add-mcp find postgres
+
+# Alias
+npx add-mcp search github
+
+# Non-interactive: pick best match and install to specific agent
+npx add-mcp find neon -a cursor -y
+```
+
+`find` supports the same install flags as `add` (`-a`, `-g`, `--all`, `-n`, `-y`, `--gitignore`).
+When a server offers both remote and stdio package options, interactive mode lets you choose one (remote is the default). With `-y`, it auto-selects remote.
+
+If a selected remote server defines URL variables or header inputs:
+
+- required values must be provided
+- optional values can be skipped with Enter
+- with `-y`, placeholders are inserted (for example `<your-header-value-here>`)
+
 Example installing the Context7 MCP server:
 
 ```bash
@@ -71,7 +95,7 @@ npx add-mcp https://mcp.example.com/mcp -a cursor -y --gitignore
 | `-n, --name <name>`      | Server name (auto-inferred if not provided)                              |
 | `-y, --yes`              | Skip all confirmation prompts                                            |
 | `--all`                  | Install to all agents                                                    |
-| `--gitignore`            | Add generated config files to `.gitignore`                                |
+| `--gitignore`            | Add generated config files to `.gitignore`                               |
 
 ### Additional Commands
 
@@ -79,11 +103,16 @@ Besides the implicit add command, `add-mcp` also supports the following commands
 
 | Command       | Description                                                  |
 | ------------- | ------------------------------------------------------------ |
+| `find`        | Search MCP registry servers and install a selected match     |
+| `search`      | Alias for `find`                                             |
 | `list-agents` | List all supported coding agents with scope (project/global) |
 
 ```bash
 # List all supported agents
 npx add-mcp list-agents
+
+# Search registry servers and install
+npx add-mcp find notion
 ```
 
 ### Installation Scope

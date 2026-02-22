@@ -64,24 +64,23 @@ test("E2E CLI: --gitignore adds local config path", () => {
   const homeDir = createTempDir();
 
   const result = runCli(
-    [
-      "https://mcp.example.com/mcp",
-      "-a",
-      "cursor",
-      "-y",
-      "--gitignore",
-    ],
+    ["https://mcp.example.com/mcp", "-a", "cursor", "-y", "--gitignore"],
     projectDir,
     homeDir,
   );
 
   if (result.status !== 0) {
-    throw new Error(`CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`);
+    throw new Error(
+      `CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`,
+    );
   }
 
   const gitignorePath = join(projectDir, ".gitignore");
   assert.strictEqual(existsSync(gitignorePath), true);
-  assert.strictEqual(readFileSync(gitignorePath, "utf-8"), ".cursor/mcp.json\n");
+  assert.strictEqual(
+    readFileSync(gitignorePath, "utf-8"),
+    ".cursor/mcp.json\n",
+  );
 });
 
 test("E2E CLI: --gitignore with --global warns and does not write project .gitignore", () => {
@@ -89,20 +88,15 @@ test("E2E CLI: --gitignore with --global warns and does not write project .gitig
   const homeDir = createTempDir();
 
   const result = runCli(
-    [
-      "https://mcp.example.com/mcp",
-      "-a",
-      "cursor",
-      "-g",
-      "-y",
-      "--gitignore",
-    ],
+    ["https://mcp.example.com/mcp", "-a", "cursor", "-g", "-y", "--gitignore"],
     projectDir,
     homeDir,
   );
 
   if (result.status !== 0) {
-    throw new Error(`CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`);
+    throw new Error(
+      `CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`,
+    );
   }
 
   const combinedOutput = `${result.stdout}\n${result.stderr}`;
