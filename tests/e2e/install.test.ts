@@ -451,10 +451,10 @@ test("E2E: Install to Goose (YAML format, transformed) - remote server (sse) wit
   });
 
   const gooseAgent = agents.goose;
-  const transformed = gooseAgent.transformConfig!("example-sse", config) as Record<
-    string,
-    unknown
-  >;
+  const transformed = gooseAgent.transformConfig!(
+    "example-sse",
+    config,
+  ) as Record<string, unknown>;
 
   assert.strictEqual(transformed.type, "sse");
   assert.strictEqual(transformed.uri, "https://mcp.example.com/sse");
