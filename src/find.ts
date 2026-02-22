@@ -95,6 +95,7 @@ const TRUSTED_NAMESPACE_PREFIXES = [
 ];
 
 const NOISY_NAMESPACE_PREFIXES = ["ai.smithery/"];
+const SMITHERY_PREFIX = "ai.smithery/";
 
 export function resolveTemplateUrl(
   templateUrl: string,
@@ -155,6 +156,19 @@ export function rankRegistryEntries(
     if (scoreDiff !== 0) return scoreDiff;
     return a.name.localeCompare(b.name);
   });
+}
+
+function isSmitheryEntry(entry: RegistryServerEntry): boolean {
+  return normalize(entry.name).startsWith(SMITHERY_PREFIX);
+}
+
+export function filterSmitheryWhenAlternativesExist(
+  entries: RegistryServerEntry[],
+): RegistryServerEntry[] {
+  if (entries.length === 0) return entries;
+  const hasNonSmithery = entries.some((entry) => !isSmitheryEntry(entry));
+  if (!hasNonSmithery) return entries;
+  return entries.filter((entry) => !isSmitheryEntry(entry));
 }
 
 interface RegistryServerListResponse {
@@ -472,20 +486,23 @@ export async function runFind(
   }
 
   const rankedEntries = rankRegistryEntries(query, entries);
+  const visibleEntries = filterSmitheryWhenAlternativesExist(rankedEntries);
 
   const entry: RegistryServerEntry | null = options.yes
-    ? (rankedEntries[0] ?? null)
+    ? (visibleEntries[0] ?? null)
     : await (async () => {
         const selected = await p.select({
           message: `Find MCP servers for "${query}"`,
-          options: rankedEntries.slice(0, 15).map((entryOption) => ({
+          options: visibleEntries.slice(0, 15).map((entryOption) => ({
             value: entryOption.name,
             label: formatFindResultRow(entryOption),
             hint: entryOption.title ?? entryOption.description,
           })),
         });
         if (p.isCancel(selected)) return null;
-        return rankedEntries.find((result) => result.name === selected) ?? null;
+        return (
+          visibleEntries.find((result) => result.name === selected) ?? null
+        );
       })();
 
   if (!entry) {

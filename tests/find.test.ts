@@ -5,6 +5,7 @@ import {
   buildInstallPlanForEntry,
   buildPlaceholderValue,
   collectPromptValues,
+  filterSmitheryWhenAlternativesExist,
   formatFindResultRow,
   rankRegistryEntries,
   resolveTemplateUrl,
@@ -249,6 +250,41 @@ test("rankRegistryEntries prioritizes official GitHub over smithery noise", () =
   ]);
 
   assert.strictEqual(ranked[0]?.name, "io.github.github/github-mcp-server");
+});
+
+test("filterSmitheryWhenAlternativesExist removes smithery when non-smithery exists", () => {
+  const filtered = filterSmitheryWhenAlternativesExist([
+    {
+      name: "ai.smithery/smithery-github",
+      description: "smithery result",
+      version: "1.0.0",
+    },
+    {
+      name: "io.github.github/github-mcp-server",
+      description: "official github",
+      version: "0.31.0",
+    },
+  ]);
+
+  assert.deepStrictEqual(
+    filtered.map((entry) => entry.name),
+    ["io.github.github/github-mcp-server"],
+  );
+});
+
+test("filterSmitheryWhenAlternativesExist keeps smithery when only smithery exists", () => {
+  const filtered = filterSmitheryWhenAlternativesExist([
+    {
+      name: "ai.smithery/smithery-github",
+      description: "smithery result",
+      version: "1.0.0",
+    },
+  ]);
+
+  assert.deepStrictEqual(
+    filtered.map((entry) => entry.name),
+    ["ai.smithery/smithery-github"],
+  );
 });
 
 test("rankRegistryEntries prioritizes official Supabase over smithery entries", () => {
