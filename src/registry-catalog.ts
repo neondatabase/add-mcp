@@ -84,6 +84,32 @@ export const REGISTRY_CATALOG: RegistryCatalogServer[] = [
     ],
   },
   {
+    name: "com.neon/mcp-server-neon",
+    title: "Neon MCP Server",
+    description:
+      "Official Neon MCP server for managing Neon Postgres with OAuth or API key auth.",
+    version: "1.0.0",
+    remotes: [
+      {
+        type: "streamable-http",
+        url: "https://mcp.neon.tech/mcp",
+        headers: [
+          {
+            name: "Authorization",
+            description:
+              "Optional API key auth header, for example: Bearer <NEON_API_KEY>.",
+            isSecret: true,
+          },
+          {
+            name: "x-read-only",
+            description:
+              "Optional read-only override. Use true to restrict available tools.",
+          },
+        ],
+      },
+    ],
+  },
+  {
     name: "com.microsoft/microsoft-learn-mcp",
     title: "Microsoft Learn MCP",
     description:
