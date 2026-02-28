@@ -1,14 +1,19 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join, dirname, isAbsolute, relative, sep } from "path";
-import type {
+import {
   AgentType,
   AgentConfig,
   McpServerConfig,
   ParsedSource,
   TransportType,
+  ConfigFile,
 } from "./types.js";
 import { agents } from "./agents.js";
 import { writeConfig, buildConfigWithKey } from "./formats/index.js";
+import { readJsonConfig } from "./formats/json.js";
+import { readTomlConfig } from "./formats/toml.js";
+import { readYamlConfig } from "./formats/yaml.js";
+import { getNestedValue } from "./formats/utils.js";
 
 export interface InstallOptions {
   /** Install to local (project-level) config instead of global */
@@ -28,6 +33,8 @@ export interface InstallResult {
   success: boolean;
   path: string;
   error?: string;
+  /** True when the server was already present (by name or URL) and was not re-written */
+  skipped?: boolean;
 }
 
 export interface BuildServerConfigOptions {
@@ -166,6 +173,58 @@ function getConfigKey(
   return agent.configKey;
 }
 
+/**
+ * Read the existing config file regardless of format and return the
+ * server entries stored under `configKey`.
+ */
+function readExistingServers(
+  configPath: string,
+  format: string,
+  configKey: string,
+): ConfigFile | undefined {
+  let existing: ConfigFile;
+  try {
+    switch (format) {
+      case "json":
+        existing = readJsonConfig(configPath);
+        break;
+      case "toml":
+        existing = readTomlConfig(configPath);
+        break;
+      case "yaml":
+        existing = readYamlConfig(configPath);
+        break;
+      default:
+        return undefined;
+    }
+  } catch {
+    return undefined;
+  }
+
+  const servers = getNestedValue(existing, configKey);
+  return servers && typeof servers === "object"
+    ? (servers as ConfigFile)
+    : undefined;
+}
+
+/**
+ * Check whether any existing server entry already points at the same URL.
+ */
+function hasUrlMatch(
+  servers: ConfigFile,
+  url: string | undefined,
+): string | undefined {
+  if (!url) return undefined;
+  for (const [name, entry] of Object.entries(servers)) {
+    if (entry && typeof entry === "object" && "url" in entry) {
+      if ((entry as Record<string, unknown>).url === url) {
+        return name;
+      }
+    }
+  }
+  return undefined;
+}
+
 export function installServerForAgent(
   serverName: string,
   serverConfig: McpServerConfig,
@@ -176,6 +235,26 @@ export function installServerForAgent(
   const configPath = getConfigPath(agent, options);
 
   try {
+    const configKey = getConfigKey(agent, options);
+
+    // Check for duplicates before writing
+    const existingServers = readExistingServers(
+      configPath,
+      agent.format,
+      configKey,
+    );
+    if (existingServers) {
+      // Skip if server name already exists
+      if (serverName in existingServers) {
+        return { success: true, path: configPath, skipped: true };
+      }
+      // Skip if the URL is already configured under a different name
+      const urlMatch = hasUrlMatch(existingServers, serverConfig.url);
+      if (urlMatch) {
+        return { success: true, path: configPath, skipped: true };
+      }
+    }
+
     const dir = dirname(configPath);
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
@@ -187,7 +266,6 @@ export function installServerForAgent(
         })
       : serverConfig;
 
-    const configKey = getConfigKey(agent, options);
     const config = buildConfigWithKey(configKey, serverName, transformedConfig);
 
     writeConfig(configPath, config, agent.format, configKey);

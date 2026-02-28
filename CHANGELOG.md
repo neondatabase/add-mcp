@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- fix idempotent config writes: skip existing server entries by name instead of overwriting, detect URL duplicates for remote servers, and use per-entry `jsonc.modify` to avoid reformatting sibling entries in JSON configs
+
 ## [1.2.2] - 2026-02-21
 
 - fix Goose remote HTTP/SSE header support and simplify header capability handling
