@@ -60,9 +60,10 @@ function cleanup() {
 // Agent Configuration Tests
 // ============================================
 
-test("getAgentTypes returns all 13 agents", () => {
+test("getAgentTypes returns all 14 agents", () => {
   const types = getAgentTypes();
-  assert.strictEqual(types.length, 13);
+  assert.strictEqual(types.length, 14);
+  assert.ok(types.includes("antigravity"));
   assert.ok(types.includes("cline"));
   assert.ok(types.includes("cline-cli"));
   assert.ok(types.includes("claude-code"));
@@ -137,9 +138,10 @@ test("getProjectCapableAgents returns 9 agents", () => {
   assert.ok(projectAgents.includes("zed"));
 });
 
-test("getGlobalOnlyAgents returns 4 agents", () => {
+test("getGlobalOnlyAgents returns 5 agents", () => {
   const globalAgents = getGlobalOnlyAgents();
-  assert.strictEqual(globalAgents.length, 4);
+  assert.strictEqual(globalAgents.length, 5);
+  assert.ok(globalAgents.includes("antigravity"));
   assert.ok(globalAgents.includes("cline"));
   assert.ok(globalAgents.includes("cline-cli"));
   assert.ok(globalAgents.includes("claude-desktop"));
@@ -339,6 +341,33 @@ test("isTransportSupported - most agents support sse", () => {
       `${type} should support sse`,
     );
   }
+});
+
+test("isTransportSupported - antigravity only supports stdio", () => {
+  assert.strictEqual(
+    isTransportSupported("antigravity", "stdio"),
+    true,
+    "antigravity should support stdio",
+  );
+  assert.strictEqual(
+    isTransportSupported("antigravity", "http"),
+    false,
+    "antigravity should not support http",
+  );
+  assert.strictEqual(
+    isTransportSupported("antigravity", "sse"),
+    false,
+    "antigravity should not support sse",
+  );
+});
+
+test("antigravity has unsupportedTransportMessage", () => {
+  const msg = agents.antigravity.unsupportedTransportMessage;
+  assert.ok(msg, "antigravity should have an unsupportedTransportMessage");
+  assert.ok(
+    msg.includes("mcp-remote"),
+    "message should mention mcp-remote guidance",
+  );
 });
 
 test("isTransportSupported - claude-desktop only supports stdio", () => {

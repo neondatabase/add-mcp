@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.5.0] - 2026-02-28
+
+- Add support for Antigravity
+
 ## [1.4.0] - 2026-02-28
 
 - Add support for MCPorter

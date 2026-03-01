@@ -42,6 +42,12 @@ function getPlatformPaths() {
 }
 
 const { appSupport, vscodePath, gooseConfigPath } = getPlatformPaths();
+const antigravityConfigPath = join(
+  home,
+  ".gemini",
+  "antigravity",
+  "mcp_config.json",
+);
 const clineCliConfigPath = join(
   process.env.CLINE_DIR || join(home, ".cline"),
   "data",
@@ -264,6 +270,21 @@ function resolveMcporterConfigPath(
 }
 
 export const agents: Record<AgentType, AgentConfig> = {
+  antigravity: {
+    name: "antigravity",
+    displayName: "Antigravity",
+    configPath: antigravityConfigPath,
+    projectDetectPaths: [], // Global only - no project support
+    configKey: "mcpServers",
+    format: "json",
+    supportedTransports: ["stdio"],
+    unsupportedTransportMessage:
+      "Antigravity only supports local (stdio) servers via its config file. Use mcp-remote to connect to remote servers.",
+    detectGlobalInstall: async () => {
+      return existsSync(join(home, ".gemini"));
+    },
+  },
+
   cline: {
     name: "cline",
     displayName: "Cline VSCode Extension",

@@ -2,7 +2,7 @@
 
 Add MCP servers to your favorite coding agents with a single command.
 
-Supports **Claude Code**, **Codex**, **Cursor**, **OpenCode**, **VSCode** and [8 more](#supported-agents).
+Supports **Claude Code**, **Codex**, **Cursor**, **OpenCode**, **VSCode** and [9 more](#supported-agents).
 
 ## Install an MCP Server
 
@@ -138,6 +138,7 @@ MCP servers can be installed to any of these agents:
 
 | Agent                  | `--agent`            | Project Path            | Global Path                                                                                                     |
 | ---------------------- | -------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Antigravity            | `antigravity`        | -                       | `~/.gemini/antigravity/mcp_config.json`                                                                         |
 | Cline VSCode Extension | `cline`              | -                       | `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json` |
 | Cline CLI              | `cline-cli`          | -                       | `~/.cline/data/settings/cline_mcp_settings.json`                                                                |
 | Claude Code            | `claude-code`        | `.mcp.json`             | `~/.claude.json`                                                                                                |

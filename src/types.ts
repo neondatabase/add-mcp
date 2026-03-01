@@ -1,4 +1,5 @@
 export type AgentType =
+  | "antigravity"
   | "cline"
   | "cline-cli"
   | "claude-code"
