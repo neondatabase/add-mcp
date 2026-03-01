@@ -4,7 +4,7 @@ import { program } from "commander";
 import * as p from "@clack/prompts";
 import chalk from "chalk";
 import { homedir } from "os";
-import type { AgentType, TransportType } from "./types.js";
+import type { AgentType, McpServerConfig, TransportType } from "./types.js";
 import { agentAliases } from "./types.js";
 import {
   agents,
@@ -24,6 +24,7 @@ import {
   installServer,
   updateGitignoreWithPaths,
 } from "./installer.js";
+import { detectOAuthForRemoteMcpServer } from "./oauth-probe.js";
 
 import packageJson from "../package.json" with { type: "json" };
 
@@ -360,6 +361,7 @@ async function main(target: string | undefined, options: Options) {
     transport: resolvedTransport,
     headers: isRemote && hasHeaderValues ? headerResult.headers : undefined,
   });
+  const perAgentConfig = new Map<AgentType, McpServerConfig>();
 
   // Determine target agents
   let targetAgents: AgentType[];
@@ -625,6 +627,17 @@ async function main(target: string | undefined, options: Options) {
     }
   }
 
+  if (isRemote && targetAgents.includes("mcporter")) {
+    spinner.start("Checking OAuth metadata for MCPorter...");
+    const shouldUseOAuth = await detectOAuthForRemoteMcpServer(serverConfig);
+    if (shouldUseOAuth) {
+      perAgentConfig.set("mcporter", { ...serverConfig, auth: "oauth" });
+      spinner.stop("Detected OAuth metadata, adding auth=oauth for MCPorter");
+    } else {
+      spinner.stop("No OAuth metadata detected for MCPorter");
+    }
+  }
+
   // Show summary
   const summaryLines: string[] = [];
   summaryLines.push(`${chalk.cyan("Server:")} ${serverName}`);
@@ -679,6 +692,7 @@ async function main(target: string | undefined, options: Options) {
 
   const results = installServer(serverName, serverConfig, targetAgents, {
     routing: agentRouting,
+    perAgentConfig: perAgentConfig.size > 0 ? perAgentConfig : undefined,
   });
 
   spinner.stop("Installation complete");

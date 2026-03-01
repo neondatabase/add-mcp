@@ -75,6 +75,8 @@ export interface McpServerConfig {
   type?: TransportType;
   url?: string;
   headers?: Record<string, string>;
+  /** Optional auth strategy for clients that support explicit auth mode */
+  auth?: string;
   /** For local stdio servers */
   command?: string;
   args?: string[];

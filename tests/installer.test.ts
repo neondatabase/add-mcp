@@ -514,6 +514,45 @@ test("installServer - mcporter global prefers mcporter.json over mcporter.jsonc"
   }
 });
 
+test("installServer - perAgentConfig applies mcporter auth override only to mcporter", () => {
+  const tempDir = createTempDir();
+  const originalMcporterPath = agents.mcporter.configPath;
+  agents.mcporter.configPath = join(tempDir, ".mcporter", "mcporter.json");
+
+  try {
+    const parsed = parseSource("https://mcp.example.com/mcp");
+    const config = buildServerConfig(parsed);
+
+    const results = installServer("example", config, ["mcporter", "cursor"], {
+      routing: new Map<AgentType, "local" | "global">([
+        ["mcporter", "global"],
+        ["cursor", "local"],
+      ]),
+      perAgentConfig: new Map<AgentType, typeof config>([
+        ["mcporter", { ...config, auth: "oauth" }],
+      ]),
+      cwd: tempDir,
+    });
+
+    assert.ok(results.get("mcporter")?.success);
+    assert.ok(results.get("cursor")?.success);
+
+    const mcporterSaved = readJsonConfig(
+      join(tempDir, ".mcporter", "mcporter.json"),
+    );
+    const mcporterServers = mcporterSaved.mcpServers as Record<string, unknown>;
+    const mcporterServer = mcporterServers.example as Record<string, unknown>;
+    assert.strictEqual(mcporterServer.auth, "oauth");
+
+    const cursorSaved = readJsonConfig(join(tempDir, ".cursor", "mcp.json"));
+    const cursorServers = cursorSaved.mcpServers as Record<string, unknown>;
+    const cursorServer = cursorServers.example as Record<string, unknown>;
+    assert.strictEqual(cursorServer.auth, undefined);
+  } finally {
+    agents.mcporter.configPath = originalMcporterPath;
+  }
+});
+
 test("updateGitignoreWithPaths - creates .gitignore when missing", () => {
   const tempDir = createTempDir();
   const configPath = join(tempDir, ".cursor", "mcp.json");

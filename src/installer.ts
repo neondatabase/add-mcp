@@ -20,6 +20,8 @@ export interface InstallOptions {
 export interface InstallServerOptions {
   /** Per-agent routing map (local vs global) */
   routing?: Map<AgentType, "local" | "global">;
+  /** Optional per-agent server config overrides */
+  perAgentConfig?: Map<AgentType, McpServerConfig>;
   /** Current working directory for local installs */
   cwd?: string;
 }
@@ -227,9 +229,12 @@ export function installServer(
       cwd: options.cwd,
     };
 
+    const effectiveServerConfig =
+      options.perAgentConfig?.get(agentType) ?? serverConfig;
+
     const result = installServerForAgent(
       serverName,
-      serverConfig,
+      effectiveServerConfig,
       agentType,
       installOptions,
     );
