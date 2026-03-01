@@ -171,7 +171,7 @@ function parseHeaders(values: string[]): ParsedHeadersResult {
 program
   .name("add-mcp")
   .description(
-    "Install MCP servers onto coding agents (Cline VSCode Extension, Cline CLI, Claude Code, Cursor, VS Code, OpenCode, Codex)",
+    "Install MCP servers onto coding agents (Claude Code, Cursor, VS Code, OpenCode, Codex, and more — run list-agents for the full list)",
   )
   .version(version)
   .argument("[target]", "MCP server URL (remote) or package name (local stdio)")
