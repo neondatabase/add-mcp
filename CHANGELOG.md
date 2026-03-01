@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.5.1] - 2026-03-01
+
+- detect OAuth metadata for MCPorter remote installs and set `auth: "oauth"` automatically when advertised
+
 ## [1.5.0] - 2026-02-28
 
 - Add support for Antigravity

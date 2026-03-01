@@ -249,6 +249,39 @@ function transformGitHubCopilotCliConfig(
   return localConfig;
 }
 
+function transformMcporterConfig(
+  _serverName: string,
+  config: McpServerConfig,
+): unknown {
+  if (config.url) {
+    const remoteConfig: Record<string, unknown> = {
+      type: config.type || "http",
+      url: config.url,
+    };
+
+    if (config.headers && Object.keys(config.headers).length > 0) {
+      remoteConfig.headers = config.headers;
+    }
+
+    if (config.auth) {
+      remoteConfig.auth = config.auth;
+    }
+
+    return remoteConfig;
+  }
+
+  const localConfig: Record<string, unknown> = {
+    command: config.command,
+    args: config.args || [],
+  };
+
+  if (config.env && Object.keys(config.env).length > 0) {
+    localConfig.env = config.env;
+  }
+
+  return localConfig;
+}
+
 function resolveMcporterConfigPath(
   agent: AgentConfig,
   options: { local: boolean; cwd: string },
@@ -432,6 +465,7 @@ export const agents: Record<AgentType, AgentConfig> = {
       return existsSync(join(home, ".mcporter"));
     },
     resolveConfigPath: resolveMcporterConfigPath,
+    transformConfig: transformMcporterConfig,
   },
 
   opencode: {
