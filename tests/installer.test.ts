@@ -290,6 +290,111 @@ test("installServer - routing with multiple agents to different scopes", () => {
   assert.ok(!vscodeResult?.path.includes(tempDir));
 });
 
+test("installServer - overwrite replaces existing same-name entry", () => {
+  const tempDir = createTempDir();
+
+  const initial = buildServerConfig(parseSource("mcp-server-postgres"));
+  installServer("example", initial, ["cursor"], {
+    routing: new Map<AgentType, "local" | "global">([["cursor", "local"]]),
+    cwd: tempDir,
+  });
+
+  const updated = buildServerConfig(parseSource("https://mcp.new.com/mcp"));
+  const results = installServer("example", updated, ["cursor"], {
+    routing: new Map<AgentType, "local" | "global">([["cursor", "local"]]),
+    cwd: tempDir,
+    onConflict: "overwrite",
+  });
+
+  const result = results.get("cursor");
+  assert.ok(result?.success);
+  assert.strictEqual(result?.skipped, undefined);
+
+  const saved = readJsonConfig(join(tempDir, ".cursor", "mcp.json"));
+  const servers = saved.mcpServers as Record<string, unknown>;
+  const server = servers.example as Record<string, unknown>;
+  assert.strictEqual(server.url, "https://mcp.new.com/mcp");
+  assert.strictEqual(server.command, undefined);
+  assert.strictEqual(server.args, undefined);
+});
+
+test("installServer - skip keeps existing same-name entry unchanged", () => {
+  const tempDir = createTempDir();
+
+  const initial = buildServerConfig(parseSource("https://mcp.old.com/mcp"));
+  installServer("example", initial, ["cursor"], {
+    routing: new Map<AgentType, "local" | "global">([["cursor", "local"]]),
+    cwd: tempDir,
+  });
+
+  const updated = buildServerConfig(parseSource("https://mcp.new.com/mcp"));
+  const results = installServer("example", updated, ["cursor"], {
+    routing: new Map<AgentType, "local" | "global">([["cursor", "local"]]),
+    cwd: tempDir,
+    onConflict: "skip",
+  });
+
+  const result = results.get("cursor");
+  assert.ok(result?.success);
+  assert.strictEqual(result?.skipped, true);
+
+  const saved = readJsonConfig(join(tempDir, ".cursor", "mcp.json"));
+  const servers = saved.mcpServers as Record<string, unknown>;
+  const server = servers.example as Record<string, unknown>;
+  assert.strictEqual(server.url, "https://mcp.old.com/mcp");
+});
+
+test("installServer - merge adds missing options without overriding existing", () => {
+  const tempDir = createTempDir();
+
+  const initial = buildServerConfig(parseSource("https://mcp.old.com/mcp"));
+  installServer("example", initial, ["cursor"], {
+    routing: new Map<AgentType, "local" | "global">([["cursor", "local"]]),
+    cwd: tempDir,
+  });
+
+  const updated = buildServerConfig(parseSource("https://mcp.new.com/mcp"), {
+    headers: { Authorization: "Bearer token" },
+  });
+  const results = installServer("example", updated, ["cursor"], {
+    routing: new Map<AgentType, "local" | "global">([["cursor", "local"]]),
+    cwd: tempDir,
+    onConflict: "merge",
+  });
+
+  const result = results.get("cursor");
+  assert.ok(result?.success);
+  assert.strictEqual(result?.skipped, undefined);
+
+  const saved = readJsonConfig(join(tempDir, ".cursor", "mcp.json"));
+  const servers = saved.mcpServers as Record<string, unknown>;
+  const server = servers.example as Record<string, unknown>;
+  assert.strictEqual(server.url, "https://mcp.old.com/mcp");
+  assert.deepStrictEqual(server.headers, { Authorization: "Bearer token" });
+});
+
+test("installServer - warns on duplicate URL/package under different name", () => {
+  const tempDir = createTempDir();
+
+  const initial = buildServerConfig(parseSource("mcp-server-postgres"));
+  installServer("first", initial, ["cursor"], {
+    routing: new Map<AgentType, "local" | "global">([["cursor", "local"]]),
+    cwd: tempDir,
+  });
+
+  const results = installServer("second", initial, ["cursor"], {
+    routing: new Map<AgentType, "local" | "global">([["cursor", "local"]]),
+    cwd: tempDir,
+    onConflict: "overwrite",
+  });
+
+  const result = results.get("cursor");
+  assert.ok(result?.success);
+  assert.ok(result?.warnings && result.warnings.length > 0);
+  assert.match(result?.warnings?.[0] || "", /same URL\/package name/);
+  assert.match(result?.warnings?.[0] || "", /first/);
+});
+
 test("installServer - github-copilot-cli local uses VS Code servers key", () => {
   const tempDir = createTempDir();
   const parsed = parseSource("mcp-server-postgres");

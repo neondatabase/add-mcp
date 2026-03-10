@@ -244,6 +244,80 @@ test("E2E CLI: stdio server to claude-desktop succeeds", () => {
   assert.strictEqual(server.command, "npx");
 });
 
+test("E2E CLI: --on-conflict skip preserves existing server entry", () => {
+  const projectDir = createTempDir();
+  const homeDir = createTempDir();
+
+  const first = runCli(
+    [
+      "https://mcp.old.com/mcp",
+      "-a",
+      "cursor",
+      "-y",
+      "--name",
+      "example",
+      "--on-conflict",
+      "overwrite",
+    ],
+    projectDir,
+    homeDir,
+  );
+  if (first.status !== 0) {
+    throw new Error(
+      `Initial CLI failed.\nSTDOUT:\n${first.stdout}\nSTDERR:\n${first.stderr}`,
+    );
+  }
+
+  const second = runCli(
+    [
+      "https://mcp.new.com/mcp",
+      "-a",
+      "cursor",
+      "-y",
+      "--name",
+      "example",
+      "--on-conflict",
+      "skip",
+    ],
+    projectDir,
+    homeDir,
+  );
+  if (second.status !== 0) {
+    throw new Error(
+      `Second CLI failed.\nSTDOUT:\n${second.stdout}\nSTDERR:\n${second.stderr}`,
+    );
+  }
+
+  const saved = JSON.parse(
+    readFileSync(join(projectDir, ".cursor", "mcp.json"), "utf-8"),
+  ) as Record<string, unknown>;
+  const servers = saved.mcpServers as Record<string, unknown>;
+  const server = servers.example as Record<string, unknown>;
+  assert.strictEqual(server.url, "https://mcp.old.com/mcp");
+});
+
+test("E2E CLI: invalid --on-conflict value exits with error", () => {
+  const projectDir = createTempDir();
+  const homeDir = createTempDir();
+
+  const result = runCli(
+    [
+      "https://mcp.example.com/mcp",
+      "-a",
+      "cursor",
+      "-y",
+      "--on-conflict",
+      "invalid",
+    ],
+    projectDir,
+    homeDir,
+  );
+
+  assert.notStrictEqual(result.status, 0, "CLI should fail");
+  const output = `${result.stdout}\n${result.stderr}`;
+  assert.match(output, /Invalid --on-conflict value/);
+});
+
 cleanup();
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

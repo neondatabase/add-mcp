@@ -31,3 +31,13 @@ export function writeTomlConfig(filePath: string, config: ConfigFile): void {
 
   writeFileSync(filePath, content);
 }
+
+export function writeTomlConfigExact(filePath: string, config: ConfigFile): void {
+  const dir = dirname(filePath);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+
+  const content = TOML.stringify(config as TOML.JsonMap);
+  writeFileSync(filePath, content);
+}

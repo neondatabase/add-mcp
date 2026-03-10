@@ -81,6 +81,15 @@ export function writeJsonConfig(
   writeFileSync(filePath, JSON.stringify(mergedConfig, null, 2));
 }
 
+export function writeJsonConfigExact(filePath: string, config: ConfigFile): void {
+  const dir = dirname(filePath);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+
+  writeFileSync(filePath, JSON.stringify(config, null, 2));
+}
+
 export function setNestedValue(
   obj: ConfigFile,
   path: string,

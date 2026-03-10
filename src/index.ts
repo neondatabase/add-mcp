@@ -129,6 +129,7 @@ interface Options {
   yes?: boolean;
   all?: boolean;
   gitignore?: boolean;
+  onConflict?: string;
 }
 
 /**
@@ -196,6 +197,10 @@ program
     [],
   )
   .option("-y, --yes", "Skip confirmation prompts")
+  .option(
+    "-c, --on-conflict <action>",
+    "Conflict behavior for existing server name (merge, skip, overwrite)",
+  )
   .option("--all", "Install to all agents")
   .option("--gitignore", "Add generated project config files to .gitignore")
   .action(async (target: string | undefined, options: Options) => {
@@ -353,6 +358,21 @@ async function main(target: string | undefined, options: Options) {
     if (!isRemoteSource(parsed)) {
       p.log.warn("--transport is only used for remote URLs, ignoring");
     }
+  }
+
+  let onConflict: "merge" | "skip" | "overwrite" = "overwrite";
+  if (options.onConflict) {
+    if (
+      options.onConflict !== "merge" &&
+      options.onConflict !== "skip" &&
+      options.onConflict !== "overwrite"
+    ) {
+      p.log.error(
+        `Invalid --on-conflict value: ${options.onConflict}. Valid options: merge, skip, overwrite`,
+      );
+      process.exit(1);
+    }
+    onConflict = options.onConflict;
   }
 
   // Build server config
@@ -625,6 +645,38 @@ async function main(target: string | undefined, options: Options) {
     }
   }
 
+  if (!options.yes && !options.onConflict) {
+    const conflictChoice = await p.select({
+      message:
+        "MCP server name already exists, how do you want to proceed if a conflict occurs?",
+      options: [
+        {
+          value: "overwrite",
+          label: "Override",
+          hint: "Replace existing server entry",
+        },
+        {
+          value: "skip",
+          label: "Skip",
+          hint: "Keep existing server entry unchanged",
+        },
+        {
+          value: "merge",
+          label: "Merge",
+          hint: "Only add missing config options to existing entry",
+        },
+      ],
+      initialValue: "overwrite",
+    });
+
+    if (p.isCancel(conflictChoice)) {
+      p.cancel("Installation cancelled");
+      process.exit(0);
+    }
+
+    onConflict = conflictChoice as "merge" | "skip" | "overwrite";
+  }
+
   // Show summary
   const summaryLines: string[] = [];
   summaryLines.push(`${chalk.cyan("Server:")} ${serverName}`);
@@ -679,6 +731,7 @@ async function main(target: string | undefined, options: Options) {
 
   const results = installServer(serverName, serverConfig, targetAgents, {
     routing: agentRouting,
+    onConflict,
   });
 
   spinner.stop("Installation complete");
@@ -687,15 +740,22 @@ async function main(target: string | undefined, options: Options) {
   console.log();
   const successful = [...results.entries()].filter(([_, r]) => r.success);
   const failed = [...results.entries()].filter(([_, r]) => !r.success);
+  const skipped = successful.filter(([_, result]) => result.skipped);
 
   if (successful.length > 0) {
     const resultLines: string[] = [];
     for (const [agentType, result] of successful) {
       const agent = agents[agentType];
       const shortPath = shortenPath(result.path);
-      resultLines.push(
-        `${chalk.green("✓")} ${agent.displayName}: ${chalk.dim(shortPath)}`,
-      );
+      if (result.skipped) {
+        resultLines.push(
+          `${chalk.yellow("~")} ${agent.displayName}: ${chalk.dim(shortPath)} ${chalk.yellow("(skipped existing)")}`,
+        );
+      } else {
+        resultLines.push(
+          `${chalk.green("✓")} ${agent.displayName}: ${chalk.dim(shortPath)}`,
+        );
+      }
     }
 
     p.note(
@@ -703,6 +763,18 @@ async function main(target: string | undefined, options: Options) {
       chalk.green(
         `Installed to ${successful.length} agent${successful.length !== 1 ? "s" : ""}`,
       ),
+    );
+  }
+
+  const warnings = successful.flatMap(([_, result]) => result.warnings ?? []);
+  const uniqueWarnings = [...new Set(warnings)];
+  for (const warning of uniqueWarnings) {
+    p.log.warn(warning);
+  }
+
+  if (skipped.length > 0) {
+    p.log.info(
+      `Skipped ${skipped.length} agent${skipped.length !== 1 ? "s" : ""} due to conflict policy`,
     );
   }
 
