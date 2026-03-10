@@ -26,38 +26,7 @@ export function writeTomlConfig(filePath: string, config: ConfigFile): void {
     existingConfig = readTomlConfig(filePath);
   }
 
-  // Only add new top-level keys; don't overwrite existing ones
-  const safeConfig: ConfigFile = {};
-  for (const [key, value] of Object.entries(config)) {
-    if (
-      value &&
-      typeof value === "object" &&
-      !Array.isArray(value) &&
-      existingConfig[key] &&
-      typeof existingConfig[key] === "object"
-    ) {
-      // Merge sub-keys but skip existing entries
-      const existingSub = existingConfig[key] as ConfigFile;
-      const newSub = value as ConfigFile;
-      const merged: ConfigFile = {};
-      for (const [subKey, subValue] of Object.entries(newSub)) {
-        if (!(subKey in existingSub)) {
-          merged[subKey] = subValue;
-        }
-      }
-      if (Object.keys(merged).length > 0) {
-        safeConfig[key] = merged;
-      }
-    } else if (!(key in existingConfig)) {
-      safeConfig[key] = value;
-    }
-  }
-
-  if (Object.keys(safeConfig).length === 0) {
-    return; // Nothing new to add
-  }
-
-  const mergedConfig = deepMerge(existingConfig, safeConfig);
+  const mergedConfig = deepMerge(existingConfig, config);
   const content = TOML.stringify(mergedConfig as TOML.JsonMap);
 
   writeFileSync(filePath, content);

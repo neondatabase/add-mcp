@@ -42,7 +42,7 @@ export function readJsonConfig(filePath: string): ConfigFile {
   return parsed as ConfigFile;
 }
 
-/** Preserves comments and formatting when possible. Skips entries that already exist by name. */
+/** Preserves comments and formatting when possible */
 export function writeJsonConfig(
   filePath: string,
   config: ConfigFile,
@@ -53,51 +53,31 @@ export function writeJsonConfig(
     mkdirSync(dir, { recursive: true });
   }
 
-  let content = "";
+  let originalContent = "";
   let existingConfig: ConfigFile = {};
 
   if (existsSync(filePath)) {
-    content = readFileSync(filePath, "utf-8");
-    existingConfig = jsonc.parse(content) as ConfigFile;
+    originalContent = readFileSync(filePath, "utf-8");
+    existingConfig = jsonc.parse(originalContent) as ConfigFile;
   }
 
-  // Determine which entries are truly new (not already present by name)
-  const existingServers = (getNestedValue(existingConfig, configKey) ||
-    {}) as ConfigFile;
-  const newServers = (getNestedValue(config, configKey) || {}) as ConfigFile;
+  const mergedConfig = deepMerge(existingConfig, config);
 
-  const entriesToAdd: Record<string, unknown> = {};
-  for (const [name, value] of Object.entries(newServers)) {
-    if (!(name in existingServers)) {
-      entriesToAdd[name] = value;
-    }
-  }
-
-  if (Object.keys(entriesToAdd).length === 0) {
-    return; // Nothing new to add
-  }
-
-  if (content) {
+  if (originalContent) {
     try {
-      const fmt = detectIndent(content);
-      const keyPath = configKey.split(".");
-
-      // Add each new entry individually to preserve existing formatting
-      for (const [name, value] of Object.entries(entriesToAdd)) {
-        const edits = jsonc.modify(content, [...keyPath, name], value, {
-          formattingOptions: fmt,
-        });
-        content = jsonc.applyEdits(content, edits);
-      }
-
-      writeFileSync(filePath, content);
+      const configKeyPath = configKey.split(".");
+      const newValue = getNestedValue(mergedConfig, configKey);
+      const edits = jsonc.modify(originalContent, configKeyPath, newValue, {
+        formattingOptions: detectIndent(originalContent),
+      });
+      const updatedContent = jsonc.applyEdits(originalContent, edits);
+      writeFileSync(filePath, updatedContent);
       return;
     } catch {
       // jsonc-parser failed, fall back to JSON.stringify
     }
   }
 
-  const mergedConfig = deepMerge(existingConfig, config);
   writeFileSync(filePath, JSON.stringify(mergedConfig, null, 2));
 }
 
