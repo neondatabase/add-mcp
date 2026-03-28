@@ -40,6 +40,9 @@ npx add-mcp https://mcp.example.com/mcp -g -a claude-code -y
 # Full command with arguments
 npx add-mcp "npx -y @org/mcp-server --flag value"
 
+# Firewall-wrapped stdio command
+npx add-mcp "npx -y mcp-transport-firewall -- npx -y @modelcontextprotocol/server-filesystem /path/to/dir"
+
 # Node.js script
 npx add-mcp "node /path/to/server.js --port 3000"
 
