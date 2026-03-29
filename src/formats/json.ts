@@ -81,7 +81,50 @@ export function writeJsonConfig(
   writeFileSync(filePath, JSON.stringify(mergedConfig, null, 2));
 }
 
-export function writeJsonConfigExact(filePath: string, config: ConfigFile): void {
+/**
+ * Replace exactly one nested JSON entry while preserving surrounding file content.
+ * Example path: "mcpServers.my-server"
+ */
+export function writeJsonConfigAtPath(
+  filePath: string,
+  keyPath: string,
+  value: unknown,
+): void {
+  const dir = dirname(filePath);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+
+  const pathParts = keyPath.split(".");
+  let originalContent = "";
+  let fallbackConfig: ConfigFile = {};
+
+  if (existsSync(filePath)) {
+    originalContent = readFileSync(filePath, "utf-8");
+    fallbackConfig = jsonc.parse(originalContent) as ConfigFile;
+  }
+
+  if (originalContent) {
+    try {
+      const edits = jsonc.modify(originalContent, pathParts, value, {
+        formattingOptions: detectIndent(originalContent),
+      });
+      const updatedContent = jsonc.applyEdits(originalContent, edits);
+      writeFileSync(filePath, updatedContent);
+      return;
+    } catch {
+      // jsonc-parser failed, fall back to JSON.stringify
+    }
+  }
+
+  setNestedValue(fallbackConfig, keyPath, value);
+  writeFileSync(filePath, JSON.stringify(fallbackConfig, null, 2));
+}
+
+export function writeJsonConfigExact(
+  filePath: string,
+  config: ConfigFile,
+): void {
   const dir = dirname(filePath);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });

@@ -17,6 +17,7 @@ import {
   setNestedValue,
   readConfig,
 } from "./formats/index.js";
+import { writeJsonConfigAtPath } from "./formats/json.js";
 
 export interface InstallOptions {
   /** Install to local (project-level) config instead of global */
@@ -249,7 +250,9 @@ function normalizeEntryIdentity(config: unknown): string | undefined {
   return undefined;
 }
 
-function duplicateIdentityWarning(duplicateNames: string[]): string | undefined {
+function duplicateIdentityWarning(
+  duplicateNames: string[],
+): string | undefined {
   if (duplicateNames.length === 0) {
     return undefined;
   }
@@ -357,7 +360,10 @@ export function installServer(
         }
 
         if (conflictPolicy === "merge") {
-          servers[serverName] = mergeMissingKeys(existingEntry, transformedConfig);
+          servers[serverName] = mergeMissingKeys(
+            existingEntry,
+            transformedConfig,
+          );
         } else {
           servers[serverName] = transformedConfig;
         }
@@ -368,7 +374,15 @@ export function installServer(
       setNestedValue(existingConfig, configKey, servers);
 
       if (existingEntry !== undefined && conflictPolicy === "overwrite") {
-        writeConfigExact(configPath, existingConfig, agent.format);
+        if (agent.format === "json") {
+          writeJsonConfigAtPath(
+            configPath,
+            `${configKey}.${serverName}`,
+            servers[serverName],
+          );
+        } else {
+          writeConfigExact(configPath, existingConfig, agent.format);
+        }
       } else {
         const nextConfig = buildConfigWithKey(
           configKey,

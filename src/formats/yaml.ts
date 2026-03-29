@@ -37,7 +37,10 @@ export function writeYamlConfig(filePath: string, config: ConfigFile): void {
   writeFileSync(filePath, content);
 }
 
-export function writeYamlConfigExact(filePath: string, config: ConfigFile): void {
+export function writeYamlConfigExact(
+  filePath: string,
+  config: ConfigFile,
+): void {
   const dir = dirname(filePath);
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });

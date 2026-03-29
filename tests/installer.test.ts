@@ -7,7 +7,14 @@
  */
 
 import assert from "node:assert";
-import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  rmSync,
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -393,6 +400,85 @@ test("installServer - warns on duplicate URL/package under different name", () =
   assert.ok(result?.warnings && result.warnings.length > 0);
   assert.match(result?.warnings?.[0] || "", /same URL\/package name/);
   assert.match(result?.warnings?.[0] || "", /first/);
+});
+
+test("installServer - warns when URL already exists under another name", () => {
+  const tempDir = createTempDir();
+
+  const initial = buildServerConfig(parseSource("https://mcp.example.com/mcp"));
+  installServer("first-url", initial, ["cursor"], {
+    routing: new Map<AgentType, "local" | "global">([["cursor", "local"]]),
+    cwd: tempDir,
+  });
+
+  const duplicateUrl = buildServerConfig(
+    parseSource("https://mcp.example.com/mcp"),
+  );
+  const results = installServer("second-url", duplicateUrl, ["cursor"], {
+    routing: new Map<AgentType, "local" | "global">([["cursor", "local"]]),
+    cwd: tempDir,
+    onConflict: "overwrite",
+  });
+
+  const result = results.get("cursor");
+  assert.ok(result?.success);
+  assert.ok(result?.warnings && result.warnings.length > 0);
+  assert.match(result?.warnings?.[0] || "", /same URL\/package name/);
+  assert.match(result?.warnings?.[0] || "", /first-url/);
+});
+
+test("installServer - overwrite updates only matching JSON entry", () => {
+  const tempDir = createTempDir();
+  const configPath = join(tempDir, ".cursor", "mcp.json");
+
+  const initialDoc = {
+    mcpServers: {
+      replaceMe: {
+        command: "npx",
+        args: ["-y", "mcp-server-postgres"],
+        env: {
+          KEEP: "old",
+        },
+      },
+      keepMe: {
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-filesystem"],
+      },
+    },
+  };
+
+  // Seed file so we can verify only one entry changes.
+  const cursorDir = join(tempDir, ".cursor");
+  if (!existsSync(cursorDir)) {
+    mkdirSync(cursorDir, { recursive: true });
+  }
+  writeFileSync(configPath, JSON.stringify(initialDoc, null, 2));
+
+  const updated = buildServerConfig(parseSource("https://mcp.new.com/mcp"));
+  const results = installServer("replaceMe", updated, ["cursor"], {
+    routing: new Map<AgentType, "local" | "global">([["cursor", "local"]]),
+    cwd: tempDir,
+    onConflict: "overwrite",
+  });
+
+  const result = results.get("cursor");
+  assert.ok(result?.success);
+
+  const saved = readJsonConfig(configPath);
+  const servers = saved.mcpServers as Record<string, unknown>;
+  const replaced = servers.replaceMe as Record<string, unknown>;
+  const preserved = servers.keepMe as Record<string, unknown>;
+
+  // Overwritten entry is fully replaced.
+  assert.strictEqual(replaced.url, "https://mcp.new.com/mcp");
+  assert.strictEqual(replaced.command, undefined);
+  assert.strictEqual(replaced.env, undefined);
+  // Sibling entry is untouched.
+  assert.strictEqual(preserved.command, "npx");
+  assert.deepStrictEqual(preserved.args, [
+    "-y",
+    "@modelcontextprotocol/server-filesystem",
+  ]);
 });
 
 test("installServer - github-copilot-cli local uses VS Code servers key", () => {

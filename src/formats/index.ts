@@ -60,10 +60,7 @@ export function writeConfigExact(
   }
 }
 
-export function readConfig(
-  filePath: string,
-  format: ConfigFormat,
-): ConfigFile {
+export function readConfig(filePath: string, format: ConfigFormat): ConfigFile {
   switch (format) {
     case "json":
       return readJsonConfig(filePath);

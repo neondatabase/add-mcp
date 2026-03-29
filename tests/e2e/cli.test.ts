@@ -318,6 +318,51 @@ test("E2E CLI: invalid --on-conflict value exits with error", () => {
   assert.match(output, /Invalid --on-conflict value/);
 });
 
+test("E2E CLI: warns when URL already exists under different name", () => {
+  const projectDir = createTempDir();
+  const homeDir = createTempDir();
+
+  const first = runCli(
+    [
+      "https://mcp.example.com/mcp",
+      "-a",
+      "cursor",
+      "-y",
+      "--name",
+      "first-url",
+    ],
+    projectDir,
+    homeDir,
+  );
+  if (first.status !== 0) {
+    throw new Error(
+      `Initial CLI failed.\nSTDOUT:\n${first.stdout}\nSTDERR:\n${first.stderr}`,
+    );
+  }
+
+  const second = runCli(
+    [
+      "https://mcp.example.com/mcp",
+      "-a",
+      "cursor",
+      "-y",
+      "--name",
+      "second-url",
+    ],
+    projectDir,
+    homeDir,
+  );
+  if (second.status !== 0) {
+    throw new Error(
+      `Second CLI failed.\nSTDOUT:\n${second.stdout}\nSTDERR:\n${second.stderr}`,
+    );
+  }
+
+  const output = `${second.stdout}\n${second.stderr}`;
+  assert.match(output, /same URL\/package name already exists/i);
+  assert.match(output, /first-url/);
+});
+
 cleanup();
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
