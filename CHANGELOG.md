@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.6.0] - 2026-03-29
+
+- add repeatable `--env KEY=VALUE` support for local stdio installs (package and command sources)
+- validate `--env` format, preserve values after the first `=`, and warn when `--env` is used with remote URL installs
+- add unit and e2e coverage for env propagation across agent-specific config mappings (`env`, `envs`, `environment`)
+
 ## [1.5.1] - 2026-03-01
 
 - update Antigravity to support remote MCP servers via `serverUrl` config
