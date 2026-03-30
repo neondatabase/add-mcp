@@ -369,18 +369,14 @@ program
   });
 
 async function runFindCommand(
-  keyword: string,
+  keyword: string | undefined,
   rawOptions: Options | { opts: () => Options },
 ) {
   const options = {
     ...extractOptions(rawOptions),
     ...extractFindOptionsFromArgv(),
   };
-  const query = keyword.trim();
-  if (!query) {
-    p.log.error("Please provide a search keyword");
-    process.exit(1);
-  }
+  const query = (keyword ?? "").trim();
 
   const registries = await ensureFindRegistriesConfigured(options.yes);
   if (!registries) {
@@ -419,8 +415,10 @@ async function runFindCommand(
 }
 
 program
-  .command("find <keyword>")
-  .description("Find MCP servers from curated registry data")
+  .command("find [keyword]")
+  .description(
+    "Find MCP servers from curated registry data (omit keyword to browse)",
+  )
   .option(
     "-g, --global",
     "Install globally (user-level) instead of project-level",
@@ -439,13 +437,16 @@ program
   .option("--all", "Install to all agents")
   .option("--gitignore", "Add generated project config files to .gitignore")
   .action(
-    async (keyword: string, options: Options | { opts: () => Options }) => {
+    async (
+      keyword: string | undefined,
+      options: Options | { opts: () => Options },
+    ) => {
       await runFindCommand(keyword, options);
     },
   );
 
 program
-  .command("search <keyword>")
+  .command("search [keyword]")
   .description("Alias for find")
   .option(
     "-g, --global",
@@ -465,7 +466,10 @@ program
   .option("--all", "Install to all agents")
   .option("--gitignore", "Add generated project config files to .gitignore")
   .action(
-    async (keyword: string, options: Options | { opts: () => Options }) => {
+    async (
+      keyword: string | undefined,
+      options: Options | { opts: () => Options },
+    ) => {
       await runFindCommand(keyword, options);
     },
   );

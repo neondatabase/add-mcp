@@ -199,6 +199,38 @@ test("E2E CLI: find -y picks best match and installs remote with placeholders", 
   });
 });
 
+test("E2E CLI: search alias respects --type transport preference", () => {
+  const projectDir = createTempDir();
+  const homeDir = createTempDir();
+  seedFindRegistries(homeDir);
+
+  const result = runCli(
+    ["search", "linear", "-a", "cursor", "-y", "--type", "sse"],
+    projectDir,
+    homeDir,
+  );
+
+  if (result.status !== 0) {
+    throw new Error(
+      `CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`,
+    );
+  }
+
+  const configPath = join(projectDir, ".cursor", "mcp.json");
+  assert.strictEqual(existsSync(configPath), true);
+
+  const savedConfig = JSON.parse(readFileSync(configPath, "utf-8")) as {
+    mcpServers?: Record<string, { url?: string; type?: string }>;
+  };
+  const selected = Object.values(savedConfig.mcpServers ?? {}).find(
+    (server) => server.url?.includes("/sse") === true,
+  );
+  assert.ok(
+    selected,
+    "expected search alias to install an SSE endpoint when --type sse is provided",
+  );
+});
+
 test("E2E CLI: mcporter default install writes project config", () => {
   const projectDir = createTempDir();
   const homeDir = createTempDir();

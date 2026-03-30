@@ -25,7 +25,8 @@ npx add-mcp search github
 npx add-mcp find neon -a cursor -y
 ```
 
-`find` supports the same install flags as `add` (`-a`, `-g`, `--all`, `-n`, `-y`, `--gitignore`).
+`find` and `search` support install flags for agent/scope selection and transport preference:
+`-a`, `-g`, `--all`, `-n`, `-t/--transport`, `--type`, `-y`, `--gitignore`.
 When a server offers both remote and stdio package options, interactive mode lets you choose one (remote is the default). With `-y`, it auto-selects remote.
 
 If a selected remote server defines URL variables or header inputs:
@@ -199,12 +200,16 @@ The CLI uses smart detection to find agents in your project directory and global
 
 The first time you run `find` or `search`, the CLI prompts you to choose which registries to enable. Your selection is saved to `~/.config/add-mcp/config.json` (respects `XDG_CONFIG_HOME`) and reused on every subsequent search.
 
+If you run with `-y` before this one-time registry setup is completed, the CLI exits with guidance to rerun without `--yes`.
+
 ### Built-in Registries
 
 | Registry                        | Base URL                                                | Description                                                                                                                                                                                                                        |
 | ------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Verified essentials**         | `https://mcp-registry.agent-tooling.dev/api/v1/servers` | A curated list of first-party, verified MCP servers from popular developer tools and SaaS services. Designed to surface high-quality, officially maintained servers instead of a long tail of unmaintained or third-party entries. |
 | **Official Anthropic registry** | `https://registry.modelcontextprotocol.io/v0.1/servers` | The community-driven MCP server registry maintained by Anthropic. Contains the broadest catalog of MCP servers.                                                                                                                    |
+
+`MCP_REGISTRY_API_URL` can override the official registry base URL.
 
 ### Editing or Removing Registries
 
@@ -238,7 +243,7 @@ Any server that implements the registry API can be added as a custom entry. The 
 | --------- | -------------------------------------- |
 | `search`  | The user's search keyword (lowercased) |
 | `version` | `latest`                               |
-| `limit`   | `30`                                   |
+| `limit`   | `100`                                  |
 
 The endpoint must return JSON in this shape:
 

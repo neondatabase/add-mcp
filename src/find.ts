@@ -278,10 +278,12 @@ function toEntry(item: RegistryServerListItem): RegistryServerEntry | null {
 
 function buildRegistryRequestUrl(serversUrl: string, query: string): string {
   const params = new URLSearchParams({
-    search: query,
     version: "latest",
-    limit: "30",
+    limit: "100",
   });
+  if (query.length > 0) {
+    params.set("search", query);
+  }
   const url = new URL(serversUrl);
   for (const [key, value] of params.entries()) {
     url.searchParams.set(key, value);
@@ -294,9 +296,6 @@ export async function searchRegistry(
   registries: FindRegistrySearchConfig[],
 ): Promise<RegistrySearchResult> {
   const trimmedQuery = normalize(query);
-  if (!trimmedQuery) {
-    return { entries: [], failedRegistries: [] };
-  }
 
   const deduped = new Map<string, RegistryServerEntry>();
   const failedRegistries: FailedRegistryInfo[] = [];
@@ -629,6 +628,45 @@ async function offerFallbackSearch(
   return fallbackResult.entries;
 }
 
+const FIND_PAGE_SIZE = 15;
+const LOAD_MORE_SENTINEL = "__load_more__";
+
+async function selectEntryWithPagination(
+  visibleEntries: RegistryServerEntry[],
+  message: string,
+): Promise<RegistryServerEntry | null> {
+  let page = 0;
+
+  while (true) {
+    const start = page * FIND_PAGE_SIZE;
+    const slice = visibleEntries.slice(start, start + FIND_PAGE_SIZE);
+    const hasMore = visibleEntries.length > start + FIND_PAGE_SIZE;
+    const remaining = visibleEntries.length - (start + FIND_PAGE_SIZE);
+
+    const options: { value: string; label: string; hint?: string }[] =
+      slice.map((entryOption) => ({
+        value: entryOption.name,
+        label: formatFindResultRow(entryOption),
+        hint: entryOption.title ?? entryOption.description,
+      }));
+
+    if (hasMore) {
+      options.push({
+        value: LOAD_MORE_SENTINEL,
+        label: `▼ Show more results (${remaining} remaining)`,
+      });
+    }
+
+    const selected = await p.select({ message, options });
+    if (p.isCancel(selected)) return null;
+    if (selected === LOAD_MORE_SENTINEL) {
+      page++;
+      continue;
+    }
+    return visibleEntries.find((e) => e.name === selected) ?? null;
+  }
+}
+
 export async function runFind(
   query: string,
   options: FindCommandOptions,
@@ -643,6 +681,8 @@ export async function runFind(
             serversUrl: resolveOfficialRegistryServersUrl(),
           },
         ];
+
+  const isBrowseMode = query.trim().length === 0;
 
   const result = await searchRegistry(query, registries);
   let entries = result.entries;
@@ -659,7 +699,7 @@ export async function runFind(
       p.log.error(formatRegistryFailure(failure));
     }
 
-    if (!options.yes) {
+    if (!options.yes && !isBrowseMode) {
       const fallbackEntries = await offerFallbackSearch(query, registries);
       if (fallbackEntries) {
         entries = fallbackEntries;
@@ -669,30 +709,26 @@ export async function runFind(
 
   if (entries.length === 0) {
     if (failedRegistries.length === 0) {
-      p.log.warn(`No MCP servers found for "${query}"`);
+      p.log.warn(
+        isBrowseMode
+          ? "No MCP servers found in the configured registries"
+          : `No MCP servers found for "${query}"`,
+      );
     }
     return null;
   }
 
-  const rankedEntries = rankRegistryEntries(query, entries);
-  const visibleEntries = filterSmitheryWhenAlternativesExist(rankedEntries);
+  const visibleEntries = isBrowseMode
+    ? filterSmitheryWhenAlternativesExist(entries)
+    : filterSmitheryWhenAlternativesExist(rankRegistryEntries(query, entries));
+
+  const message = isBrowseMode
+    ? "Browse MCP servers"
+    : `Find MCP servers for "${query}"`;
 
   const entry: RegistryServerEntry | null = options.yes
     ? (visibleEntries[0] ?? null)
-    : await (async () => {
-        const selected = await p.select({
-          message: `Find MCP servers for "${query}"`,
-          options: visibleEntries.slice(0, 15).map((entryOption) => ({
-            value: entryOption.name,
-            label: formatFindResultRow(entryOption),
-            hint: entryOption.title ?? entryOption.description,
-          })),
-        });
-        if (p.isCancel(selected)) return null;
-        return (
-          visibleEntries.find((result) => result.name === selected) ?? null
-        );
-      })();
+    : await selectEntryWithPagination(visibleEntries, message);
 
   if (!entry) {
     return null;

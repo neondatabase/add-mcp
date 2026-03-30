@@ -625,16 +625,60 @@ test("buildInstallPlanForEntry injects placeholders in -y mode", async () => {
   });
 });
 
-test("searchRegistry returns empty for blank query", async () => {
-  const result = await searchRegistry("   ", [
-    {
-      id: "official",
-      label: "Official",
-      serversUrl: "https://registry.modelcontextprotocol.io/v0.1/servers",
-    },
-  ]);
-  assert.strictEqual(result.entries.length, 0);
-  assert.strictEqual(result.failedRegistries.length, 0);
+test("searchRegistry fetches entries for blank query (browse mode)", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    assert.strictEqual(
+      url.includes("search="),
+      false,
+      "browse request should not include search param",
+    );
+    return {
+      ok: true,
+      json: async () => ({
+        servers: officialServersFixture.map(toApiServerShape),
+      }),
+    } as Response;
+  }) as typeof fetch;
+
+  try {
+    const result = await searchRegistry("   ", [
+      {
+        id: "official",
+        label: "Official",
+        serversUrl: "https://registry.modelcontextprotocol.io/v0.1/servers",
+      },
+    ]);
+    assert.strictEqual(result.entries.length, officialServersFixture.length);
+    assert.strictEqual(result.failedRegistries.length, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("searchRegistry fetches entries for empty string query (browse mode)", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    ({
+      ok: true,
+      json: async () => ({
+        servers: officialServersFixture.slice(0, 3).map(toApiServerShape),
+      }),
+    }) as Response) as typeof fetch;
+
+  try {
+    const result = await searchRegistry("", [
+      {
+        id: "official",
+        label: "Official",
+        serversUrl: "https://registry.modelcontextprotocol.io/v0.1/servers",
+      },
+    ]);
+    assert.strictEqual(result.entries.length, 3);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("resolveOfficialRegistryServersUrl returns default when no env", () => {
