@@ -226,14 +226,6 @@ function extractFindOptionsFromArgv(): Partial<Options> {
       i += 1;
       continue;
     }
-    if (
-      (arg === "-t" || arg === "--transport" || arg === "--type") &&
-      argv[i + 1]
-    ) {
-      result.transport = argv[i + 1] as Options["transport"];
-      i += 1;
-      continue;
-    }
     if (arg === "-a" || arg === "--agent") {
       const agents: string[] = result.agent ? [...result.agent] : [];
       let j = i + 1;
@@ -251,6 +243,36 @@ function extractFindOptionsFromArgv(): Partial<Options> {
   }
 
   return result;
+}
+
+function inferFindPreferredTransport(
+  options: Options,
+): TransportType | undefined {
+  // Only infer from explicit agent flags; otherwise default to HTTP-first.
+  if (!options.agent || options.agent.length === 0) {
+    return undefined;
+  }
+
+  const resolvedAgents = options.agent
+    .map((value) => resolveAgentType(value))
+    .filter((value): value is AgentType => value !== null);
+
+  if (resolvedAgents.length === 0) {
+    return undefined;
+  }
+
+  const supportsHttp = resolvedAgents.some((agent) =>
+    isTransportSupported(agent, "http"),
+  );
+  if (supportsHttp) {
+    return undefined;
+  }
+
+  const supportsSse = resolvedAgents.every((agent) =>
+    isTransportSupported(agent, "sse"),
+  );
+
+  return supportsSse ? "sse" : undefined;
 }
 
 /**
@@ -383,15 +405,10 @@ async function runFindCommand(
     process.exit(0);
   }
 
-  const findTransport =
-    options.transport === "sse" || options.transport === "http"
-      ? options.transport
-      : undefined;
-
   const installPlan = await runFind(query, {
     yes: options.yes,
     registries,
-    transport: findTransport,
+    preferredTransport: inferFindPreferredTransport(options),
   });
 
   if (!installPlan) {
@@ -402,7 +419,7 @@ async function runFindCommand(
   const mergedOptions: Options = {
     ...options,
     name: options.name || installPlan.serverName,
-    transport: installPlan.transport ?? options.transport,
+    transport: installPlan.transport,
     header: installPlan.headers
       ? Object.entries(installPlan.headers).map(
           ([key, value]) => `${key}: ${value}`,
@@ -423,11 +440,6 @@ program
     "Install globally (user-level) instead of project-level",
   )
   .option("-a, --agent <agent>", "Specify agents to install to", collect, [])
-  .option(
-    "-t, --transport <type>",
-    "Preferred transport type: http (default), sse",
-  )
-  .option("--type <type>", "Alias for --transport")
   .option(
     "-n, --name <name>",
     "Server name override (defaults to catalog entry name)",
@@ -452,11 +464,6 @@ program
     "Install globally (user-level) instead of project-level",
   )
   .option("-a, --agent <agent>", "Specify agents to install to", collect, [])
-  .option(
-    "-t, --transport <type>",
-    "Preferred transport type: http (default), sse",
-  )
-  .option("--type <type>", "Alias for --transport")
   .option(
     "-n, --name <name>",
     "Server name override (defaults to catalog entry name)",

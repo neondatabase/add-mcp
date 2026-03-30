@@ -47,7 +47,7 @@ export interface RegistryServerEntry {
 export interface FindCommandOptions {
   yes?: boolean;
   registries?: FindRegistrySearchConfig[];
-  transport?: TransportType;
+  preferredTransport?: TransportType;
 }
 
 export interface FindInstallPlan {
@@ -355,10 +355,10 @@ function pickRemote(
 ): RegistryRemoteDefinition | null {
   const remotes = entry.remotes ?? [];
   if (remotes.length === 0) return null;
-  const preferredType: RegistryRemoteTransport =
-    preferredTransport === "sse" ? "sse" : "streamable-http";
-  const preferred = remotes.find((remote) => remote.type === preferredType);
-  // Fall back to first available when preferred transport isn't offered
+  const preferred =
+    preferredTransport === "sse"
+      ? remotes.find((remote) => remote.type === "sse")
+      : remotes.find((remote) => remote.type === "streamable-http");
   return preferred ?? remotes[0] ?? null;
 }
 
@@ -488,7 +488,7 @@ export async function buildInstallPlanForEntry(
   entry: RegistryServerEntry,
   options: FindCommandOptions,
 ): Promise<FindInstallPlan | null> {
-  const remote = pickRemote(entry, options.transport);
+  const remote = pickRemote(entry, options.preferredTransport);
   const pkg = entry.package ?? null;
   const hasRemote = remote !== null;
   const hasPackage = pkg !== null;

@@ -770,7 +770,7 @@ test("getDefaultFindRegistries returns two hardcoded registries", () => {
   assert.ok(defaults[1]?.url.includes("modelcontextprotocol.io"));
 });
 
-test("buildInstallPlanForEntry picks SSE remote when --transport sse", async () => {
+test("buildInstallPlanForEntry picks SSE remote when preferred transport is sse", async () => {
   const plan = await buildInstallPlanForEntry(
     {
       name: "app.linear/linear",
@@ -781,7 +781,7 @@ test("buildInstallPlanForEntry picks SSE remote when --transport sse", async () 
         { type: "sse", url: "https://mcp.linear.app/sse" },
       ],
     },
-    { yes: true, transport: "sse" },
+    { yes: true, preferredTransport: "sse" },
   );
   assert.ok(plan);
   assert.strictEqual(plan?.target, "https://mcp.linear.app/sse");
@@ -816,7 +816,7 @@ test("buildInstallPlanForEntry falls back to available remote when preferred tra
         { type: "streamable-http", url: "https://docs.mcp.cloudflare.com/mcp" },
       ],
     },
-    { yes: true, transport: "sse" },
+    { yes: true, preferredTransport: "sse" },
   );
   assert.ok(plan);
   assert.strictEqual(plan?.target, "https://docs.mcp.cloudflare.com/mcp");

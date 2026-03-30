@@ -197,13 +197,13 @@ test("E2E CLI: find -y picks best match and installs remote with placeholders", 
   });
 });
 
-test("E2E CLI: search alias respects --type transport preference", () => {
+test("E2E CLI: search alias defaults to HTTP endpoint when both are available", () => {
   const projectDir = createTempDir();
   const homeDir = createTempDir();
   seedFindRegistries(homeDir);
 
   const result = runCli(
-    ["search", "linear", "-a", "cursor", "-y", "--type", "sse"],
+    ["search", "linear", "-a", "cursor", "-y"],
     projectDir,
     homeDir,
   );
@@ -221,11 +221,13 @@ test("E2E CLI: search alias respects --type transport preference", () => {
     mcpServers?: Record<string, { url?: string; type?: string }>;
   };
   const selected = Object.values(savedConfig.mcpServers ?? {}).find(
-    (server) => server.url?.includes("/sse") === true,
+    (server) => server.url?.includes("linear.app") === true,
   );
-  assert.ok(
-    selected,
-    "expected search alias to install an SSE endpoint when --type sse is provided",
+  assert.ok(selected, "expected search alias to install a linear endpoint");
+  assert.strictEqual(
+    selected?.url,
+    "https://mcp.linear.app/mcp",
+    "expected search alias to prefer HTTP endpoint by default",
   );
 });
 

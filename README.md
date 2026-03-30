@@ -6,40 +6,115 @@ Supports **Claude Code**, **Codex**, **Cursor**, **OpenCode**, **VSCode** and [9
 
 ## Install an MCP Server
 
+Install an MCP server by remote URL or package name:
+
 ```bash
 npx add-mcp url | package name [options]
 ```
 
-## Find MCP Servers
-
-Search and install servers directly from the MCP registry API:
-
-```bash
-# Interactive search and selection
-npx add-mcp find postgres
-
-# Alias
-npx add-mcp search github
-
-# Non-interactive: pick best match and install to specific agent
-npx add-mcp find neon -a cursor -y
-```
-
-`find` and `search` support install flags for agent/scope selection and transport preference:
-`-a`, `-g`, `--all`, `-n`, `-t/--transport`, `--type`, `-y`, `--gitignore`.
-When a server offers both remote and stdio package options, interactive mode lets you choose one (remote is the default). With `-y`, it auto-selects remote.
-
-If a selected remote server defines URL variables or header inputs:
-
-- required values must be provided
-- optional values can be skipped with Enter
-- with `-y`, placeholders are inserted (for example `<your-header-value-here>`)
-
-Example installing the Context7 MCP server:
+Example installing the Context7 remote MCP server:
 
 ```bash
 npx add-mcp https://mcp.context7.com/mcp
 ```
+
+You can add env variables and arguments (stdio) and headers (remote) to the server config using the `--env`, `--args` and `--header` options.
+
+## Find an MCP Servers
+
+Find and install MCP servers from the add-mcp curated registry and/or the official Anthropic MCP registry:
+
+```bash
+npx add-mcp find vercel
+```
+
+When running `find`/`search` for the first time, the CLI prompts you to choose which registries to enable (add-mcp curated registry and/or official Anthropic registry). You can also add custom registries to the configuration file.
+
+## Supported Agents
+
+MCP servers can be installed to any of these agents:
+
+| Agent                  | `--agent`            | Project Path            | Global Path                                                                                                     |
+| ---------------------- | -------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Antigravity            | `antigravity`        | -                       | `~/.gemini/antigravity/mcp_config.json`                                                                         |
+| Cline VSCode Extension | `cline`              | -                       | `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json` |
+| Cline CLI              | `cline-cli`          | -                       | `~/.cline/data/settings/cline_mcp_settings.json`                                                                |
+| Claude Code            | `claude-code`        | `.mcp.json`             | `~/.claude.json`                                                                                                |
+| Claude Desktop         | `claude-desktop`     | -                       | `~/Library/Application Support/Claude/claude_desktop_config.json`                                               |
+| Codex                  | `codex`              | `.codex/config.toml`    | `~/.codex/config.toml`                                                                                          |
+| Cursor                 | `cursor`             | `.cursor/mcp.json`      | `~/.cursor/mcp.json`                                                                                            |
+| Gemini CLI             | `gemini-cli`         | `.gemini/settings.json` | `~/.gemini/settings.json`                                                                                       |
+| Goose                  | `goose`              | `.goose/config.yaml`    | `~/.config/goose/config.yaml`                                                                                   |
+| GitHub Copilot CLI     | `github-copilot-cli` | `.vscode/mcp.json`      | `~/.copilot/mcp-config.json`                                                                                    |
+| MCPorter               | `mcporter`           | `config/mcporter.json`  | `~/.mcporter/mcporter.json` (or existing `~/.mcporter/mcporter.jsonc`)                                          |
+| OpenCode               | `opencode`           | `opencode.json`         | `~/.config/opencode/opencode.json`                                                                              |
+| VS Code                | `vscode`             | `.vscode/mcp.json`      | `~/Library/Application Support/Code/User/mcp.json`                                                              |
+| Zed                    | `zed`                | `.zed/settings.json`    | `~/Library/Application Support/Zed/settings.json`                                                               |
+
+**Aliases:** `cline-vscode` → `cline`, `gemini` → `gemini-cli`, `github-copilot` → `vscode`
+
+## Installation Scope
+
+| Scope       | Flag      | Location                | Use Case                                      |
+| ----------- | --------- | ----------------------- | --------------------------------------------- |
+| **Project** | (default) | `.cursor/mcp.json` etc. | Committed with your project, shared with team |
+| **Global**  | `-g`      | `~/.cursor/mcp.json`    | Available across all projects                 |
+
+## Smart Detection
+
+The CLI automatically detects agents based on your environment:
+
+**Default (project mode):**
+
+- Detects project-level config files (`.cursor/`, `.vscode/`, `.mcp.json`, etc.)
+- Selects detected agents (have project config in the current directory) by default
+- Shows detected agents plus all other supported agents for selection
+
+**With `-g` (global mode):**
+
+- Detects all globally-installed agents (including Claude Desktop, Codex, Zed)
+- Selects detected agents by default
+- Shows detected agents plus all other supported agents for selection
+
+**No agents detected:**
+
+- Interactive mode: Defaults to the last selection and shows all agents for selection
+- With `--yes`: Installs to all project-capable agents (project mode) or all global-capable agents (global mode)
+
+## Transport Types
+
+`add-mcp` supports all three transport types: HTTP, SSE, and stdio. Some agents require `type` option to be set to specify the transport type. You can use the `--type` or `--transport` option to specify the transport type:
+
+| Transport | Flag               | Description                                           |
+| --------- | ------------------ | ----------------------------------------------------- |
+| **HTTP**  | `--transport http` | Streamable HTTP (default)                             |
+| **SSE**   | `--transport sse`  | Server-Sent Events (deprecated by MCP but still used) |
+
+Local servers (npm packages, commands) always use **stdio** transport.
+
+Note that some agents like Cursor and opencode do not require the `type` information to be set.
+
+## HTTP Headers
+
+Use `--header` to pass custom headers for remote servers. The flag can be repeated.
+Header support is available for remote installs across all supported agents.
+
+## Environment Variables
+
+Use `--env` to pass environment variables for local stdio servers (packages/commands). The flag can be repeated and expects `KEY=VALUE`.
+If `--env` is provided for a remote URL install, it is ignored with a warning.
+
+## Commands
+
+Besides the implicit add command, `add-mcp` also supports the following commands:
+
+| Command       | Description                                                  |
+| ------------- | ------------------------------------------------------------ |
+| `find`        | Search MCP registry servers and install a selected match     |
+| `search`      | Alias for `find`                                             |
+| `list-agents` | List all supported coding agents with scope (project/global) |
+
+## Add Command
 
 ### Usage Examples
 
@@ -102,101 +177,49 @@ npx add-mcp https://mcp.example.com/mcp -a cursor -y --gitignore
 | `--all`                  | Install to all agents                                                    |
 | `--gitignore`            | Add generated config files to `.gitignore`                               |
 
-### Additional Commands
+## Find Command
 
-Besides the implicit add command, `add-mcp` also supports the following commands:
-
-| Command       | Description                                                  |
-| ------------- | ------------------------------------------------------------ |
-| `find`        | Search MCP registry servers and install a selected match     |
-| `search`      | Alias for `find`                                             |
-| `list-agents` | List all supported coding agents with scope (project/global) |
+### Usage Examples
 
 ```bash
-# List all supported agents
-npx add-mcp list-agents
+# Search for servers by keyword and choose one interactively
+npx add-mcp find vercel
 
-# Search registry servers and install
-npx add-mcp find notion
+# Browse servers without a keyword
+npx add-mcp find
+
+# Use search alias (same as find)
+npx add-mcp search notion
+
+# Install a found server globally to a specific agent without prompts
+npx add-mcp find neon -a claude-code -g -y
+
+# Install to all agents and add generated project configs to .gitignore
+npx add-mcp find github --all --gitignore
 ```
 
-### Installation Scope
+### Options
 
-| Scope       | Flag      | Location                | Use Case                                      |
-| ----------- | --------- | ----------------------- | --------------------------------------------- |
-| **Project** | (default) | `.cursor/mcp.json` etc. | Committed with your project, shared with team |
-| **Global**  | `-g`      | `~/.cursor/mcp.json`    | Available across all projects                 |
+| Option                | Description                                                              |
+| --------------------- | ------------------------------------------------------------------------ |
+| `-g, --global`        | Install to user directory instead of project                             |
+| `-a, --agent <agent>` | Target specific agents (e.g., `cursor`, `claude-code`). Can be repeated. |
+| `-n, --name <name>`   | Server name override (defaults to the selected catalog entry name)       |
+| `-y, --yes`           | Skip confirmation prompts                                                |
+| `--all`               | Install to all agents                                                    |
+| `--gitignore`         | Add generated config files to `.gitignore`                               |
 
-### Smart Detection
+Transport for `find`/`search` is inferred from registry metadata. The CLI prefers HTTP remotes when available and only falls back to SSE when HTTP is not available for the selected install context.
 
-The CLI automatically detects agents based on your environment:
+When a server offers both remote and stdio package options, interactive mode lets you choose one (remote is the default). With `-y`, it auto-selects remote.
 
-**Default (project mode):**
+If a selected remote server defines URL variables or header inputs:
 
-- Detects project-level config files (`.cursor/`, `.vscode/`, `.mcp.json`, etc.)
-- Selects detected agents (have project config in the current directory) by default
-- Shows detected agents plus all other supported agents for selection
+- required values must be provided
+- optional values can be skipped with Enter
+- with `-y`, placeholders are inserted (for example `<your-header-value-here>`)
 
-**With `-g` (global mode):**
-
-- Detects all globally-installed agents (including Claude Desktop, Codex, Zed)
-- Selects detected agents by default
-- Shows detected agents plus all other supported agents for selection
-
-**No agents detected:**
-
-- Interactive mode: Defaults to the last selection and shows all agents for selection
-- With `--yes`: Installs to all project-capable agents (project mode) or all global-capable agents (global mode)
-
-## Transport Types
-
-`add-mcp` supports all three transport types: HTTP, SSE, and stdio. Some agents require `type` option to be set to specify the transport type. You can use the `--type` or `--transport` option to specify the transport type:
-
-| Transport | Flag               | Description                                           |
-| --------- | ------------------ | ----------------------------------------------------- |
-| **HTTP**  | `--transport http` | Streamable HTTP (default)                             |
-| **SSE**   | `--transport sse`  | Server-Sent Events (deprecated by MCP but still used) |
-
-Local servers (npm packages, commands) always use **stdio** transport.
-
-Note that some agents like Cursor and opencode do not require the `type` information to be set.
-
-## HTTP Headers
-
-Use `--header` to pass custom headers for remote servers. The flag can be repeated.
-Header support is available for remote installs across all supported agents.
-
-## Environment Variables
-
-Use `--env` to pass environment variables for local stdio servers (packages/commands). The flag can be repeated and expects `KEY=VALUE`.
-If `--env` is provided for a remote URL install, it is ignored with a warning.
-
-## Supported Agents
-
-MCP servers can be installed to any of these agents:
-
-| Agent                  | `--agent`            | Project Path            | Global Path                                                                                                     |
-| ---------------------- | -------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Antigravity            | `antigravity`        | -                       | `~/.gemini/antigravity/mcp_config.json`                                                                         |
-| Cline VSCode Extension | `cline`              | -                       | `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json` |
-| Cline CLI              | `cline-cli`          | -                       | `~/.cline/data/settings/cline_mcp_settings.json`                                                                |
-| Claude Code            | `claude-code`        | `.mcp.json`             | `~/.claude.json`                                                                                                |
-| Claude Desktop         | `claude-desktop`     | -                       | `~/Library/Application Support/Claude/claude_desktop_config.json`                                               |
-| Codex                  | `codex`              | `.codex/config.toml`    | `~/.codex/config.toml`                                                                                          |
-| Cursor                 | `cursor`             | `.cursor/mcp.json`      | `~/.cursor/mcp.json`                                                                                            |
-| Gemini CLI             | `gemini-cli`         | `.gemini/settings.json` | `~/.gemini/settings.json`                                                                                       |
-| Goose                  | `goose`              | `.goose/config.yaml`    | `~/.config/goose/config.yaml`                                                                                   |
-| GitHub Copilot CLI     | `github-copilot-cli` | `.vscode/mcp.json`      | `~/.copilot/mcp-config.json`                                                                                    |
-| MCPorter               | `mcporter`           | `config/mcporter.json`  | `~/.mcporter/mcporter.json` (or existing `~/.mcporter/mcporter.jsonc`)                                          |
-| OpenCode               | `opencode`           | `opencode.json`         | `~/.config/opencode/opencode.json`                                                                              |
-| VS Code                | `vscode`             | `.vscode/mcp.json`      | `~/Library/Application Support/Code/User/mcp.json`                                                              |
-| Zed                    | `zed`                | `.zed/settings.json`    | `~/Library/Application Support/Zed/settings.json`                                                               |
-
-**Aliases:** `cline-vscode` → `cline`, `gemini` → `gemini-cli`, `github-copilot` → `vscode`
-
-The CLI uses smart detection to find agents in your project directory and globally installed agents. See [Smart Detection](#smart-detection) for details.
-
-## Configuring Registries for Find / Search
+### Configuring Registries for Find / Search
 
 The first time you run `find` or `search`, the CLI prompts you to choose which registries to enable. Your selection is saved to `~/.config/add-mcp/config.json` (respects `XDG_CONFIG_HOME`) and reused on every subsequent search.
 
@@ -272,27 +295,8 @@ To add your own registry, append an entry to `findRegistries` in `~/.config/add-
 }
 ```
 
-## What are MCP Servers?
-
-[Model Context Protocol (MCP)](https://modelcontextprotocol.io/) servers extend your coding agent's capabilities by providing tools, resources, and context. MCP servers can:
-
-- Integrate with external services (Notion, Linear, GitHub, etc.)
-- Connect to databases (PostgreSQL, MySQL, etc.)
-- Provide file system access
-- Offer specialized tools for your workflow
-
 ## Troubleshooting
 
 ### Server not loading
 
-- Verify the server URL is correct and accessible
-- Check the agent's MCP configuration file for syntax errors
-- Ensure the server name doesn't conflict with existing servers
-
-### Permission errors
-
-Ensure you have write access to the target configuration directory.
-
-## License
-
-Apache 2.0
+Some agents & editors like Claude Code require a restart to load the new MCP server. Otherwise, like Cursor, require you to navigate to the MCP settings page and toggle the new server as enabled.
