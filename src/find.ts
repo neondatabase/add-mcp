@@ -367,26 +367,16 @@ function formatPackageTarget(pkg: RegistryPackageDefinition): string {
   return pkg.identifier;
 }
 
-function preferredRemoteUrl(entry: RegistryServerEntry): string | null {
-  const remotes = entry.remotes ?? [];
-  if (remotes.length === 0) return null;
-  const streamable = remotes.find(
-    (remote) => remote.type === "streamable-http",
-  );
-  return streamable?.url ?? remotes[0]?.url ?? null;
-}
-
-function preferredPackageName(entry: RegistryServerEntry): string | null {
-  return entry.package ? formatPackageTarget(entry.package) : null;
+function transportLabel(entry: RegistryServerEntry): string {
+  const parts: string[] = [];
+  if (entry.package) parts.push("stdio");
+  if (entry.remotes && entry.remotes.length > 0) parts.push("remote");
+  return parts.length > 0 ? parts.join(", ") : "unknown";
 }
 
 export function formatFindResultRow(entry: RegistryServerEntry): string {
-  const installTarget =
-    preferredRemoteUrl(entry) ??
-    preferredPackageName(entry) ??
-    "(no install target)";
-  const githubUrl = entry.repositoryUrl ?? "";
-  return `${entry.name} | ${installTarget} | ${githubUrl}`;
+  const display = entry.title ?? entry.name;
+  return `${display} (${entry.name}) [${transportLabel(entry)}]`;
 }
 
 async function promptValue(field: PromptField): Promise<string | symbol> {
@@ -630,7 +620,7 @@ async function selectEntryWithPagination(
       slice.map((entryOption) => ({
         value: entryOption.name,
         label: formatFindResultRow(entryOption),
-        hint: entryOption.title ?? entryOption.description,
+        hint: entryOption.description,
       }));
 
     if (hasMore) {
@@ -704,9 +694,10 @@ export async function runFind(
     ? filterSmitheryWhenAlternativesExist(entries)
     : filterSmitheryWhenAlternativesExist(rankRegistryEntries(query, entries));
 
+  const count = visibleEntries.length;
   const message = isBrowseMode
     ? "Browse MCP servers"
-    : `Find MCP servers for "${query}"`;
+    : `Found ${count} server${count === 1 ? "" : "s"} for "${query}" — pick one`;
 
   const entry: RegistryServerEntry | null = options.yes
     ? (visibleEntries[0] ?? null)

@@ -389,9 +389,10 @@ test("rankRegistryEntries prioritizes official Supabase over smithery entries", 
   assert.strictEqual(ranked[0]?.name, "com.supabase/mcp");
 });
 
-test("formatFindResultRow prints name, install target, and github URL", () => {
+test("formatFindResultRow shows title, name, and transport labels", () => {
   const row = formatFindResultRow({
     name: "com.supabase/mcp",
+    title: "Supabase",
     description: "MCP server for interacting with Supabase",
     version: "0.6.3",
     repositoryUrl: "https://github.com/supabase-community/supabase-mcp",
@@ -404,13 +405,10 @@ test("formatFindResultRow prints name, install target, and github URL", () => {
     },
   });
 
-  assert.strictEqual(
-    row,
-    "com.supabase/mcp | https://mcp.supabase.com/mcp | https://github.com/supabase-community/supabase-mcp",
-  );
+  assert.strictEqual(row, "Supabase (com.supabase/mcp) [stdio, remote]");
 });
 
-test("formatFindResultRow leaves github column empty when missing", () => {
+test("formatFindResultRow falls back to name when no title", () => {
   const row = formatFindResultRow({
     name: "com.example/no-repo",
     description: "No repository metadata",
@@ -418,7 +416,7 @@ test("formatFindResultRow leaves github column empty when missing", () => {
     remotes: [{ type: "streamable-http", url: "https://example.com/mcp" }],
   });
 
-  assert.strictEqual(row, "com.example/no-repo | https://example.com/mcp | ");
+  assert.strictEqual(row, "com.example/no-repo (com.example/no-repo) [remote]");
 });
 
 test("buildInstallPlanForEntry defaults to remote in -y for hybrid entries", async () => {
@@ -716,9 +714,10 @@ test("buildInstallPlanForEntry returns null when entry has no remotes or package
   assert.strictEqual(plan, null);
 });
 
-test("formatFindResultRow falls back to package name when no remote", () => {
+test("formatFindResultRow shows stdio for package-only entries", () => {
   const row = formatFindResultRow({
     name: "io.github.getsentry/sentry-mcp",
+    title: "Sentry",
     description: "Sentry MCP server",
     version: "0.25.0",
     package: {
@@ -728,19 +727,16 @@ test("formatFindResultRow falls back to package name when no remote", () => {
       transport: { type: "stdio" },
     },
   });
-  assert.strictEqual(
-    row,
-    "io.github.getsentry/sentry-mcp | @sentry/mcp-server@0.25.0 | ",
-  );
+  assert.strictEqual(row, "Sentry (io.github.getsentry/sentry-mcp) [stdio]");
 });
 
-test("formatFindResultRow shows (no install target) when neither remote nor package", () => {
+test("formatFindResultRow shows unknown transport when neither remote nor package", () => {
   const row = formatFindResultRow({
     name: "com.empty/nothing",
     description: "Nothing installable",
     version: "1.0.0",
   });
-  assert.strictEqual(row, "com.empty/nothing | (no install target) | ");
+  assert.strictEqual(row, "com.empty/nothing (com.empty/nothing) [unknown]");
 });
 
 test("resolveServerName returns 'server' as ultimate fallback", () => {
