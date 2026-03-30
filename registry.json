@@ -1,0 +1,644 @@
+[
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+      "name": "io.github.browserbase/mcp-server-browserbase",
+      "title": "Browserbase",
+      "description": "MCP server for AI web browser automation using Browserbase and Stagehand",
+      "repository": {
+        "url": "https://github.com/browserbase/mcp-server-browserbase",
+        "source": "github"
+      },
+      "version": "2.1.1",
+      "packages": [
+        {
+          "registryType": "npm",
+          "registryBaseUrl": "https://registry.npmjs.org",
+          "identifier": "@browserbasehq/mcp-server-browserbase",
+          "version": "2.1.1",
+          "transport": {
+            "type": "stdio"
+          },
+          "environmentVariables": [
+            {
+              "name": "BROWSERBASE_API_KEY",
+              "description": "Your Browserbase API key",
+              "isRequired": true,
+              "isSecret": true
+            },
+            {
+              "name": "BROWSERBASE_PROJECT_ID",
+              "description": "Your Browserbase Project ID",
+              "isRequired": true
+            },
+            {
+              "name": "GEMINI_API_KEY",
+              "description": "Your Gemini API key (default model)",
+              "isRequired": true,
+              "isSecret": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "io.github.clerk/mcp-server",
+      "title": "Clerk",
+      "description": "Access Clerk authentication docs, SDK snippets, and quickstart guides",
+      "version": "0.1.0",
+      "websiteUrl": "https://clerk.com/docs/guides/ai/mcp/clerk-mcp-server",
+      "icons": [
+        {
+          "src": "https://clerk.com/v2/downloads/symbol-dark.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "light"
+        },
+        {
+          "src": "https://clerk.com/v2/downloads/symbol-light.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "dark"
+        }
+      ],
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://mcp.clerk.com/mcp"
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "com.cloudflare.mcp/mcp",
+      "title": "Cloudflare",
+      "description": "Cloudflare MCP servers",
+      "repository": {
+        "url": "https://github.com/cloudflare/mcp-server-cloudflare",
+        "source": "github"
+      },
+      "version": "1.0.0",
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://docs.mcp.cloudflare.com/mcp"
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "io.github.upstash/context7",
+      "title": "Context7",
+      "description": "Up-to-date code docs for any prompt",
+      "repository": {
+        "url": "https://github.com/upstash/context7",
+        "source": "github"
+      },
+      "version": "1.0.31",
+      "icons": [
+        {
+          "src": "https://upstash.com/logo/upstash-icon-white-bg.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "light"
+        },
+        {
+          "src": "https://upstash.com/logo/upstash-icon-dark-bg.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "dark"
+        }
+      ],
+      "packages": [
+        {
+          "registryType": "npm",
+          "identifier": "@upstash/context7-mcp",
+          "version": "1.0.31",
+          "transport": {
+            "type": "stdio"
+          },
+          "environmentVariables": [
+            {
+              "name": "CONTEXT7_API_KEY",
+              "description": "API key for authentication",
+              "isSecret": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "io.github.github/github-mcp-server",
+      "title": "GitHub",
+      "description": "Official GitHub MCP server for repos, issues, PRs, and workflows",
+      "repository": {
+        "url": "https://github.com/github/github-mcp-server",
+        "source": "github"
+      },
+      "version": "0.33.0",
+      "packages": [
+        {
+          "registryType": "oci",
+          "identifier": "ghcr.io/github/github-mcp-server:0.33.0",
+          "transport": {
+            "type": "stdio"
+          }
+        }
+      ],
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://api.githubcopilot.com/mcp/"
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "app.linear/linear",
+      "description": "MCP server for Linear project management and issue tracking",
+      "version": "1.0.0",
+      "remotes": [
+        {
+          "type": "sse",
+          "url": "https://mcp.linear.app/sse"
+        },
+        {
+          "type": "streamable-http",
+          "url": "https://mcp.linear.app/mcp"
+        }
+      ],
+      "title": "Linear"
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "com.mux/mcp",
+      "title": "Mux",
+      "description": "The official MCP Server for the Mux API",
+      "repository": {
+        "url": "https://github.com/muxinc/mux-node-sdk",
+        "source": "github",
+        "subfolder": "packages/mcp-server"
+      },
+      "version": "12.8.0",
+      "packages": [
+        {
+          "registryType": "npm",
+          "registryBaseUrl": "https://registry.npmjs.org",
+          "identifier": "@mux/mcp",
+          "version": "12.8.0",
+          "transport": {
+            "type": "stdio"
+          },
+          "environmentVariables": [
+            {
+              "name": "MUX_TOKEN_ID",
+              "description": "Your Mux access token ID",
+              "isRequired": true,
+              "isSecret": true
+            },
+            {
+              "name": "MUX_TOKEN_SECRET",
+              "description": "Your Mux access token secret",
+              "isRequired": true,
+              "isSecret": true
+            }
+          ]
+        }
+      ],
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://mcp.mux.com",
+          "headers": [
+            {
+              "name": "Authorization",
+              "description": "Optional basic authorization header for Mux API credentials",
+              "isSecret": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "com.neon/mcp",
+      "title": "Neon",
+      "description": "Official Neon MCP server for managing Neon projects and Postgres databases.",
+      "repository": {
+        "url": "https://github.com/neondatabase/mcp-server-neon",
+        "source": "github",
+        "subfolder": "landing"
+      },
+      "version": "1.0.0",
+      "websiteUrl": "https://neon.tech/docs/ai/neon-mcp-server",
+      "icons": [
+        {
+          "src": "https://neon.com/brand/neon-logomark-light-color.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "light"
+        },
+        {
+          "src": "https://neon.com/brand/neon-logomark-dark-color.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "dark"
+        }
+      ],
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://mcp.neon.tech/mcp",
+          "headers": [
+            {
+              "name": "Authorization",
+              "description": "Optional Bearer token with a Neon API key.",
+              "isSecret": true
+            },
+            {
+              "name": "x-read-only",
+              "description": "Optional header to enable read-only mode for tool filtering.",
+              "format": "boolean",
+              "default": "false"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "com.netlify/mcp",
+      "title": "Netlify",
+      "description": "Netlify's official MCP server for builds, deploys, and project management.",
+      "repository": {
+        "url": "https://github.com/netlify/netlify-mcp",
+        "source": "github"
+      },
+      "version": "1.15.1",
+      "websiteUrl": "https://docs.netlify.com/welcome/build-with-ai/netlify-mcp-server/",
+      "packages": [
+        {
+          "registryType": "npm",
+          "registryBaseUrl": "https://registry.npmjs.org",
+          "identifier": "@netlify/mcp",
+          "version": "1.15.1",
+          "runtimeHint": "npx",
+          "transport": {
+            "type": "stdio"
+          },
+          "environmentVariables": [
+            {
+              "name": "NETLIFY_PERSONAL_ACCESS_TOKEN",
+              "description": "Optional Netlify PAT for auth fallback.",
+              "isSecret": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "io.github.vercel/next-devtools-mcp",
+      "description": "Next.js development tools MCP server with stdio transport",
+      "repository": {
+        "url": "https://github.com/vercel/next-devtools-mcp",
+        "source": "github"
+      },
+      "version": "0.3.6",
+      "packages": [
+        {
+          "registryType": "npm",
+          "identifier": "next-devtools-mcp",
+          "version": "0.3.6",
+          "transport": {
+            "type": "stdio"
+          }
+        }
+      ],
+      "title": "Next.js Devtools"
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "com.notion/mcp",
+      "description": "Official Notion MCP server",
+      "version": "1.0.1",
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://mcp.notion.com/mcp"
+        },
+        {
+          "type": "sse",
+          "url": "https://mcp.notion.com/sse"
+        }
+      ],
+      "title": "Notion"
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "io.github.railwayapp/mcp-server",
+      "description": "Official Railway MCP server",
+      "repository": {
+        "url": "https://github.com/railwayapp/railway-mcp-server",
+        "source": "github"
+      },
+      "version": "0.1.5",
+      "icons": [
+        {
+          "src": "https://railway.com/brand/logo-dark.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "light"
+        },
+        {
+          "src": "https://railway.com/brand/logo-light.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "dark"
+        }
+      ],
+      "packages": [
+        {
+          "registryType": "npm",
+          "registryBaseUrl": "https://registry.npmjs.org",
+          "identifier": "@railway/mcp-server",
+          "version": "0.1.5",
+          "transport": {
+            "type": "stdio"
+          }
+        }
+      ],
+      "title": "Railway"
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "com.render/mcp",
+      "title": "Render",
+      "description": "Official Render MCP server for managing Render resources.",
+      "repository": {
+        "url": "https://github.com/render-oss/render-mcp-server",
+        "source": "github"
+      },
+      "version": "0.3.0",
+      "websiteUrl": "https://www.render.com/docs/mcp-server",
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://mcp.render.com/mcp",
+          "headers": [
+            {
+              "name": "Authorization",
+              "description": "Bearer <RENDER_API_KEY>",
+              "isRequired": true,
+              "isSecret": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "com.resend/mcp",
+      "title": "Resend",
+      "description": "Official Resend MCP server for email operations and audience management.",
+      "repository": {
+        "url": "https://github.com/resend/mcp-send-email",
+        "source": "github"
+      },
+      "version": "2.2.0",
+      "websiteUrl": "https://resend.com/docs/mcp-server",
+      "icons": [
+        {
+          "src": "https://cdn.resend.com/brand/resend-icon-black.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "light"
+        },
+        {
+          "src": "https://cdn.resend.com/brand/resend-icon-white.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "dark"
+        }
+      ],
+      "packages": [
+        {
+          "registryType": "npm",
+          "registryBaseUrl": "https://registry.npmjs.org",
+          "identifier": "resend-mcp",
+          "version": "2.2.0",
+          "runtimeHint": "npx",
+          "transport": {
+            "type": "stdio"
+          },
+          "environmentVariables": [
+            {
+              "name": "RESEND_API_KEY",
+              "description": "Resend API key",
+              "isRequired": true,
+              "isSecret": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "io.sanity.www/mcp",
+      "description": "Direct access to your Sanity projects (content, datasets, releases, schemas) and agent rules",
+      "title": "Sanity",
+      "repository": {
+        "url": "https://github.com/sanity-io/agent-toolkit",
+        "source": "github"
+      },
+      "version": "2.15.1",
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://mcp.sanity.io"
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "io.github.getsentry/sentry-mcp",
+      "description": "MCP server for Sentry issue tracking and debugging",
+      "repository": {
+        "url": "https://github.com/getsentry/sentry-mcp",
+        "source": "github",
+        "subfolder": "packages/mcp-server"
+      },
+      "version": "0.25.0",
+      "packages": [
+        {
+          "registryType": "npm",
+          "identifier": "@sentry/mcp-server",
+          "version": "0.25.0",
+          "transport": {
+            "type": "stdio"
+          },
+          "environmentVariables": [
+            {
+              "name": "SENTRY_ACCESS_TOKEN",
+              "description": "Sentry user authentication token",
+              "isRequired": true,
+              "isSecret": true
+            }
+          ]
+        }
+      ],
+      "title": "Sentry"
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "com.slack/mcp",
+      "title": "Slack",
+      "description": "Official Slack MCP server for search, messaging, canvases, and users.",
+      "repository": {
+        "url": "https://github.com/slackapi/slack-mcp-plugin",
+        "source": "github"
+      },
+      "version": "1.0.0",
+      "websiteUrl": "https://docs.slack.dev/ai/mcp-server",
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://mcp.slack.com/mcp"
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "com.stripe/mcp",
+      "title": "Stripe",
+      "description": "Official Stripe MCP server for Stripe API tools.",
+      "repository": {
+        "url": "https://github.com/stripe/agent-toolkit",
+        "source": "github"
+      },
+      "version": "0.2.4",
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://mcp.stripe.com"
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "com.supabase/mcp",
+      "title": "Supabase",
+      "description": "MCP server for interacting with the Supabase platform",
+      "repository": {
+        "url": "https://github.com/supabase-community/supabase-mcp",
+        "source": "github",
+        "subfolder": "packages/mcp-server-supabase"
+      },
+      "version": "0.7.0",
+      "websiteUrl": "https://supabase.com/mcp",
+      "packages": [
+        {
+          "registryType": "npm",
+          "registryBaseUrl": "https://registry.npmjs.org",
+          "identifier": "@supabase/mcp-server-supabase",
+          "version": "0.7.0",
+          "runtimeHint": "npx",
+          "transport": {
+            "type": "stdio"
+          },
+          "environmentVariables": [
+            {
+              "name": "SUPABASE_ACCESS_TOKEN",
+              "description": "Personal access token for Supabase API",
+              "isRequired": true,
+              "isSecret": true
+            }
+          ]
+        }
+      ],
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://mcp.supabase.com/mcp"
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "com.vercel/vercel-mcp",
+      "description": "An MCP server for Vercel",
+      "repository": {
+        "url": "https://github.com/vercel/vercel-mcp-overview",
+        "source": "github"
+      },
+      "version": "0.0.3",
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://mcp.vercel.com"
+        }
+      ],
+      "title": "Vercel"
+    }
+  }
+]
