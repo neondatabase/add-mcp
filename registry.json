@@ -50,6 +50,24 @@
       "description": "Access Clerk authentication docs, SDK snippets, and quickstart guides",
       "version": "0.1.0",
       "websiteUrl": "https://clerk.com/docs/guides/ai/mcp/clerk-mcp-server",
+      "icons": [
+        {
+          "src": "https://clerk.com/v2/downloads/symbol-dark.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "light"
+        },
+        {
+          "src": "https://clerk.com/v2/downloads/symbol-light.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "dark"
+        }
+      ],
       "remotes": [
         {
           "type": "streamable-http",
@@ -88,6 +106,24 @@
         "source": "github"
       },
       "version": "1.0.31",
+      "icons": [
+        {
+          "src": "https://upstash.com/logo/upstash-icon-white-bg.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "light"
+        },
+        {
+          "src": "https://upstash.com/logo/upstash-icon-dark-bg.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "dark"
+        }
+      ],
       "packages": [
         {
           "registryType": "npm",
@@ -221,7 +257,7 @@
       "websiteUrl": "https://neon.tech/docs/ai/neon-mcp-server",
       "icons": [
         {
-          "src": "https://neon.com/brand/neon-logo-light-color.svg",
+          "src": "https://neon.com/brand/neon-logomark-light-color.svg",
           "mimeType": "image/svg+xml",
           "sizes": [
             "any"
@@ -229,7 +265,7 @@
           "theme": "light"
         },
         {
-          "src": "https://neon.com/brand/neon-logo-dark-color.svg",
+          "src": "https://neon.com/brand/neon-logomark-dark-color.svg",
           "mimeType": "image/svg+xml",
           "sizes": [
             "any"
@@ -343,6 +379,24 @@
         "source": "github"
       },
       "version": "0.1.5",
+      "icons": [
+        {
+          "src": "https://railway.com/brand/logo-dark.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "light"
+        },
+        {
+          "src": "https://railway.com/brand/logo-light.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "dark"
+        }
+      ],
       "packages": [
         {
           "registryType": "npm",
@@ -397,6 +451,24 @@
       },
       "version": "2.2.0",
       "websiteUrl": "https://resend.com/docs/mcp-server",
+      "icons": [
+        {
+          "src": "https://cdn.resend.com/brand/resend-icon-black.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "light"
+        },
+        {
+          "src": "https://cdn.resend.com/brand/resend-icon-white.svg",
+          "mimeType": "image/svg+xml",
+          "sizes": [
+            "any"
+          ],
+          "theme": "dark"
+        }
+      ],
       "packages": [
         {
           "registryType": "npm",
