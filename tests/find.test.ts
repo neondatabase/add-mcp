@@ -8,6 +8,7 @@ import {
   filterSmitheryWhenAlternativesExist,
   formatFindResultRow,
   rankRegistryEntries,
+  resolveOfficialRegistryServersUrl,
   resolveServerName,
   resolveTemplateUrl,
   searchRegistry,
@@ -625,6 +626,137 @@ test("buildInstallPlanForEntry injects placeholders in -y mode", async () => {
   assert.deepStrictEqual(plan?.headers, {
     Authorization: "<your-header-value-here>",
   });
+});
+
+test("searchRegistry returns empty for blank query", async () => {
+  const result = await searchRegistry("   ", [
+    {
+      id: "official",
+      label: "Official",
+      serversUrl: "https://registry.modelcontextprotocol.io/v0.1/servers",
+    },
+  ]);
+  assert.strictEqual(result.entries.length, 0);
+  assert.strictEqual(result.failedRegistries.length, 0);
+});
+
+
+test("resolveOfficialRegistryServersUrl returns default when no env", () => {
+  const original = process.env.MCP_REGISTRY_API_URL;
+  delete process.env.MCP_REGISTRY_API_URL;
+  try {
+    const url = resolveOfficialRegistryServersUrl();
+    assert.strictEqual(
+      url,
+      "https://registry.modelcontextprotocol.io/v0.1/servers",
+    );
+  } finally {
+    if (original !== undefined) process.env.MCP_REGISTRY_API_URL = original;
+  }
+});
+
+test("resolveOfficialRegistryServersUrl uses env as-is when it contains /servers", () => {
+  const original = process.env.MCP_REGISTRY_API_URL;
+  process.env.MCP_REGISTRY_API_URL =
+    "https://custom.registry.io/v2/servers";
+  try {
+    const url = resolveOfficialRegistryServersUrl();
+    assert.strictEqual(url, "https://custom.registry.io/v2/servers");
+  } finally {
+    if (original !== undefined) {
+      process.env.MCP_REGISTRY_API_URL = original;
+    } else {
+      delete process.env.MCP_REGISTRY_API_URL;
+    }
+  }
+});
+
+test("resolveOfficialRegistryServersUrl appends /v0.1/servers to base URL", () => {
+  const original = process.env.MCP_REGISTRY_API_URL;
+  process.env.MCP_REGISTRY_API_URL = "https://custom.registry.io/";
+  try {
+    const url = resolveOfficialRegistryServersUrl();
+    assert.strictEqual(url, "https://custom.registry.io/v0.1/servers");
+  } finally {
+    if (original !== undefined) {
+      process.env.MCP_REGISTRY_API_URL = original;
+    } else {
+      delete process.env.MCP_REGISTRY_API_URL;
+    }
+  }
+});
+
+test("buildInstallPlanForEntry returns package target for package-only entry", async () => {
+  const plan = await buildInstallPlanForEntry(
+    {
+      name: "io.github.getsentry/sentry-mcp",
+      description: "Sentry MCP server",
+      version: "0.25.0",
+      packages: [
+        {
+          registryType: "npm",
+          identifier: "@sentry/mcp-server",
+          version: "0.25.0",
+          transport: { type: "stdio" },
+        },
+      ],
+    },
+    { yes: true },
+  );
+  assert.ok(plan);
+  assert.strictEqual(plan?.target, "@sentry/mcp-server@0.25.0");
+  assert.strictEqual(plan?.transport, undefined);
+  assert.strictEqual(plan?.headers, undefined);
+});
+
+test("buildInstallPlanForEntry returns null when entry has no remotes or packages", async () => {
+  const plan = await buildInstallPlanForEntry(
+    {
+      name: "com.empty/nothing",
+      description: "No install targets",
+      version: "1.0.0",
+    },
+    { yes: true },
+  );
+  assert.strictEqual(plan, null);
+});
+
+test("formatFindResultRow falls back to package name when no remote", () => {
+  const row = formatFindResultRow({
+    name: "io.github.getsentry/sentry-mcp",
+    description: "Sentry MCP server",
+    version: "0.25.0",
+    packages: [
+      {
+        registryType: "npm",
+        identifier: "@sentry/mcp-server",
+        version: "0.25.0",
+        transport: { type: "stdio" },
+      },
+    ],
+  });
+  assert.strictEqual(
+    row,
+    "io.github.getsentry/sentry-mcp | @sentry/mcp-server@0.25.0 | ",
+  );
+});
+
+test("formatFindResultRow shows (no install target) when neither remote nor package", () => {
+  const row = formatFindResultRow({
+    name: "com.empty/nothing",
+    description: "Nothing installable",
+    version: "1.0.0",
+  });
+  assert.strictEqual(row, "com.empty/nothing | (no install target) | ");
+});
+
+test("resolveServerName returns 'server' as ultimate fallback", () => {
+  const name = resolveServerName({
+    name: "...",
+    description: "Edge case name",
+    version: "1.0.0",
+  });
+  assert.strictEqual(name, "server");
 });
 
 setTimeout(() => {
