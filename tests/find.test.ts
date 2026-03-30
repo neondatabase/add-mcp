@@ -460,10 +460,8 @@ test("resolveTemplateUrl replaces provided variables only", () => {
   assert.strictEqual(resolved, "https://acme.example.com/{region}/mcp");
 });
 
-test("collectPromptValues enforces required and omits empty optional", async () => {
+test("collectPromptValues uses placeholder for empty required, omits empty optional", async () => {
   const calls: string[] = [];
-  const responses = ["", "project-123", ""];
-  let i = 0;
 
   const result = await collectPromptValues(
     [
@@ -482,15 +480,32 @@ test("collectPromptValues enforces required and omits empty optional", async () 
     ],
     async (field) => {
       calls.push(field.key);
-      const value = responses[i];
-      i += 1;
-      return value ?? "";
+      return "";
     },
   );
 
   assert.strictEqual(result.cancelled, false);
+  assert.deepStrictEqual(result.values, {
+    project_id: buildPlaceholderValue("variable"),
+  });
+  assert.deepStrictEqual(calls, ["project_id", "Authorization"]);
+});
+
+test("collectPromptValues keeps user-provided values for required fields", async () => {
+  const result = await collectPromptValues(
+    [
+      {
+        key: "project_id",
+        label: "Variable project_id",
+        isRequired: true,
+        placeholder: buildPlaceholderValue("variable"),
+      },
+    ],
+    async () => "project-123",
+  );
+
+  assert.strictEqual(result.cancelled, false);
   assert.deepStrictEqual(result.values, { project_id: "project-123" });
-  assert.deepStrictEqual(calls, ["project_id", "project_id", "Authorization"]);
 });
 
 async function runRequirementMatrixCase(
@@ -501,23 +516,7 @@ async function runRequirementMatrixCase(
   calls: string[];
 }> {
   const calls: string[] = [];
-  const responses: string[] = [];
 
-  // Variable responses
-  if (variableRequired) {
-    responses.push("", "tenant-123");
-  } else {
-    responses.push("");
-  }
-
-  // Header responses
-  if (headerRequired) {
-    responses.push("", "Bearer token");
-  } else {
-    responses.push("");
-  }
-
-  let i = 0;
   const result = await collectPromptValues(
     [
       {
@@ -535,9 +534,7 @@ async function runRequirementMatrixCase(
     ],
     async (field) => {
       calls.push(field.key);
-      const value = responses[i];
-      i += 1;
-      return value ?? "";
+      return "";
     },
   );
 
@@ -545,47 +542,34 @@ async function runRequirementMatrixCase(
   return { values: result.values, calls };
 }
 
-test("matrix: variable required + header required", async () => {
-  const result = await runRequirementMatrixCase(true, true);
-  assert.deepStrictEqual(result.values, {
-    tenant_id: "tenant-123",
-    Authorization: "Bearer token",
-  });
-  assert.deepStrictEqual(result.calls, [
-    "tenant_id",
-    "tenant_id",
-    "Authorization",
-    "Authorization",
-  ]);
+test("matrix: variable optional + header optional", async () => {
+  const result = await runRequirementMatrixCase(false, false);
+  assert.deepStrictEqual(result.values, {});
+  assert.deepStrictEqual(result.calls, ["tenant_id", "Authorization"]);
 });
 
 test("matrix: variable required + header optional", async () => {
   const result = await runRequirementMatrixCase(true, false);
   assert.deepStrictEqual(result.values, {
-    tenant_id: "tenant-123",
+    tenant_id: buildPlaceholderValue("variable"),
   });
-  assert.deepStrictEqual(result.calls, [
-    "tenant_id",
-    "tenant_id",
-    "Authorization",
-  ]);
+  assert.deepStrictEqual(result.calls, ["tenant_id", "Authorization"]);
 });
 
 test("matrix: variable optional + header required", async () => {
   const result = await runRequirementMatrixCase(false, true);
   assert.deepStrictEqual(result.values, {
-    Authorization: "Bearer token",
+    Authorization: buildPlaceholderValue("header"),
   });
-  assert.deepStrictEqual(result.calls, [
-    "tenant_id",
-    "Authorization",
-    "Authorization",
-  ]);
+  assert.deepStrictEqual(result.calls, ["tenant_id", "Authorization"]);
 });
 
-test("matrix: variable optional + header optional", async () => {
-  const result = await runRequirementMatrixCase(false, false);
-  assert.deepStrictEqual(result.values, {});
+test("matrix: variable required + header required", async () => {
+  const result = await runRequirementMatrixCase(true, true);
+  assert.deepStrictEqual(result.values, {
+    tenant_id: buildPlaceholderValue("variable"),
+    Authorization: buildPlaceholderValue("header"),
+  });
   assert.deepStrictEqual(result.calls, ["tenant_id", "Authorization"]);
 });
 

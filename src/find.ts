@@ -393,24 +393,18 @@ export async function collectPromptValues(
   const values: Record<string, string> = {};
 
   for (const field of fields) {
-    // Keep asking until required values are provided.
-    while (true) {
-      const raw = await ask(field);
-      if (p.isCancel(raw)) {
-        return { values, cancelled: true };
-      }
+    const raw = await ask(field);
+    if (p.isCancel(raw)) {
+      return { values, cancelled: true };
+    }
 
-      const value = String(raw).trim();
-      if (value.length === 0) {
-        if (field.isRequired) {
-          p.log.warn(`${field.key} is required`);
-          continue;
-        }
-        break;
-      }
+    const value =
+      raw != null && typeof raw === "string" ? raw.trim() : "";
 
+    if (value.length > 0) {
       values[field.key] = value;
-      break;
+    } else if (field.isRequired) {
+      values[field.key] = field.placeholder;
     }
   }
 
@@ -446,13 +440,17 @@ function resolveNonInteractiveRemote(remote: RegistryRemoteDefinition): {
   headers?: Record<string, string>;
 } {
   const variableValues: Record<string, string> = {};
-  for (const key of Object.keys(remote.variables ?? {})) {
-    variableValues[key] = buildPlaceholderValue("variable");
+  for (const [key, def] of Object.entries(remote.variables ?? {})) {
+    if (def.isRequired) {
+      variableValues[key] = buildPlaceholderValue("variable");
+    }
   }
 
   const headerValues: Record<string, string> = {};
   for (const header of remote.headers ?? []) {
-    headerValues[header.name] = buildPlaceholderValue("header");
+    if (header.isRequired) {
+      headerValues[header.name] = buildPlaceholderValue("header");
+    }
   }
 
   return {
