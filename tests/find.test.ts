@@ -19,9 +19,10 @@ import type { RegistryServerEntry } from "../src/find.js";
 
 let passed = 0;
 let failed = 0;
+let testChain = Promise.resolve();
 
 function test(name: string, fn: () => void | Promise<void>) {
-  Promise.resolve()
+  testChain = testChain
     .then(fn)
     .then(() => {
       console.log(`✓ ${name}`);
@@ -822,7 +823,7 @@ test("buildInstallPlanForEntry falls back to available remote when preferred tra
   assert.strictEqual(plan?.transport, "http");
 });
 
-test("searchRegistry filters out entries with no npm package and no remotes", async () => {
+test("searchRegistry filters out non-installable entries (no npm package and no remotes)", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (async () =>
     ({
@@ -879,35 +880,6 @@ test("searchRegistry filters out entries with no npm package and no remotes", as
               ],
             },
           },
-        ],
-      }),
-    }) as Response) as typeof fetch;
-
-  try {
-    const result = await searchRegistry("example", [
-      {
-        url: "https://test.example.com/api/v1/servers",
-        label: "Test",
-      },
-    ]);
-    const names = result.entries.map((e) => e.name);
-    assert.strictEqual(result.entries.length, 2);
-    assert.strictEqual(names.includes("com.example/npm-server"), true);
-    assert.strictEqual(names.includes("com.example/remote-only"), true);
-    assert.strictEqual(names.includes("com.example/oci-only"), false);
-    assert.strictEqual(names.includes("com.example/metadata-only"), false);
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
-});
-
-test("searchRegistry keeps entries with both npm package and remotes", async () => {
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = (async () =>
-    ({
-      ok: true,
-      json: async () => ({
-        servers: [
           {
             server: {
               name: "com.example/hybrid",
@@ -924,7 +896,7 @@ test("searchRegistry keeps entries with both npm package and remotes", async () 
               remotes: [
                 {
                   type: "streamable-http",
-                  url: "https://example.com/mcp",
+                  url: "https://example.com/hybrid/mcp",
                 },
               ],
             },
@@ -940,16 +912,25 @@ test("searchRegistry keeps entries with both npm package and remotes", async () 
         label: "Test",
       },
     ]);
-    assert.strictEqual(result.entries.length, 1);
-    const entry = result.entries[0]!;
-    assert.strictEqual(entry.package?.identifier, "@example/hybrid");
-    assert.strictEqual(entry.remotes?.[0]?.url, "https://example.com/mcp");
+    const names = result.entries.map((e) => e.name);
+    assert.strictEqual(result.entries.length, 3);
+    assert.strictEqual(names.includes("com.example/npm-server"), true);
+    assert.strictEqual(names.includes("com.example/remote-only"), true);
+    assert.strictEqual(names.includes("com.example/hybrid"), true);
+    assert.strictEqual(names.includes("com.example/oci-only"), false);
+    assert.strictEqual(names.includes("com.example/metadata-only"), false);
+    const hybrid = result.entries.find((e) => e.name === "com.example/hybrid")!;
+    assert.strictEqual(hybrid.package?.identifier, "@example/hybrid");
+    assert.strictEqual(
+      hybrid.remotes?.[0]?.url,
+      "https://example.com/hybrid/mcp",
+    );
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
-setTimeout(() => {
+testChain.then(() => {
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed > 0 ? 1 : 0);
-}, 0);
+});
