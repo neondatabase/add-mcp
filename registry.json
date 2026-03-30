@@ -223,13 +223,17 @@
         {
           "src": "https://neon.com/brand/neon-logo-light-color.svg",
           "mimeType": "image/svg+xml",
-          "sizes": ["any"],
+          "sizes": [
+            "any"
+          ],
           "theme": "light"
         },
         {
           "src": "https://neon.com/brand/neon-logo-dark-color.svg",
           "mimeType": "image/svg+xml",
-          "sizes": ["any"],
+          "sizes": [
+            "any"
+          ],
           "theme": "dark"
         }
       ],

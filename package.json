@@ -18,6 +18,8 @@
     "dev": "tsx src/index.ts",
     "test": "tsx tests/source-parser.test.ts && tsx tests/agents.test.ts && tsx tests/mcp-lock.test.ts && tsx tests/installer.test.ts && tsx tests/e2e/install.test.ts && tsx tests/e2e/cli.test.ts",
     "test:unit": "tsx tests/source-parser.test.ts && tsx tests/agents.test.ts && tsx tests/mcp-lock.test.ts && tsx tests/installer.test.ts",
+    "registry:sort": "tsx scripts/sort-registry.ts",
+    "registry:verify": "tsx scripts/verify-registry.ts",
     "test:e2e": "tsx tests/e2e/install.test.ts && tsx tests/e2e/cli.test.ts",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
@@ -63,7 +65,8 @@
     "prettier": "^3.8.1",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "zod": "^4.3.6"
   },
   "engines": {
     "node": ">=18"
