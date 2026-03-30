@@ -109,7 +109,7 @@ async function run() {
     await saveFindRegistries([
       {
         url: "http://localhost:3000/api/v1/servers",
-        label: "Verified essentials",
+        label: "add-mcp curated registry",
       },
       {
         url: "https://registry.modelcontextprotocol.io/v0.1/servers",
@@ -120,7 +120,7 @@ async function run() {
     assert.deepStrictEqual(registries, [
       {
         url: "http://localhost:3000/api/v1/servers",
-        label: "Verified essentials",
+        label: "add-mcp curated registry",
       },
       {
         url: "https://registry.modelcontextprotocol.io/v0.1/servers",
@@ -149,7 +149,7 @@ async function run() {
         findRegistries: [
           {
             url: "http://localhost:3000/api/v1/servers",
-            label: "Verified essentials",
+            label: "add-mcp curated registry",
           },
         ],
       }),

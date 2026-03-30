@@ -205,7 +205,7 @@ export function getDefaultFindRegistries(): FindRegistrySearchConfig[] {
   return [
     {
       url: VERIFIED_ESSENTIALS_DEFAULT_SERVERS_URL,
-      label: "Verified essentials",
+      label: "add-mcp curated registry",
     },
     {
       url: resolveOfficialRegistryServersUrl(),
