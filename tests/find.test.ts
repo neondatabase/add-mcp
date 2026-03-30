@@ -170,7 +170,9 @@ function toApiServerShape(entry: RegistryServerEntry) {
     server: {
       ...rest,
       packages: pkg ? [pkg] : undefined,
-      repository: repositoryUrl ? { url: repositoryUrl, source: "github" } : undefined,
+      repository: repositoryUrl
+        ? { url: repositoryUrl, source: "github" }
+        : undefined,
     },
   };
 }
@@ -635,7 +637,6 @@ test("searchRegistry returns empty for blank query", async () => {
   assert.strictEqual(result.failedRegistries.length, 0);
 });
 
-
 test("resolveOfficialRegistryServersUrl returns default when no env", () => {
   const original = process.env.MCP_REGISTRY_API_URL;
   delete process.env.MCP_REGISTRY_API_URL;
@@ -652,8 +653,7 @@ test("resolveOfficialRegistryServersUrl returns default when no env", () => {
 
 test("resolveOfficialRegistryServersUrl uses env as-is when it contains /servers", () => {
   const original = process.env.MCP_REGISTRY_API_URL;
-  process.env.MCP_REGISTRY_API_URL =
-    "https://custom.registry.io/v2/servers";
+  process.env.MCP_REGISTRY_API_URL = "https://custom.registry.io/v2/servers";
   try {
     const url = resolveOfficialRegistryServersUrl();
     assert.strictEqual(url, "https://custom.registry.io/v2/servers");
@@ -759,10 +759,7 @@ test("formatRegistryFailure shows label for known registries", () => {
     },
     detail: "HTTP 500",
   });
-  assert.strictEqual(
-    msg.includes('"Verified essentials"'),
-    true,
-  );
+  assert.strictEqual(msg.includes('"Verified essentials"'), true);
   assert.strictEqual(
     msg.includes("https://mcp-registry.agent-tooling.dev/api/v1/servers"),
     true,
@@ -779,7 +776,10 @@ test("formatRegistryFailure shows only URL for custom registries", () => {
     },
     detail: "HTTP 503",
   });
-  assert.strictEqual(msg.startsWith("Registry https://custom.example.com/servers"), true);
+  assert.strictEqual(
+    msg.startsWith("Registry https://custom.example.com/servers"),
+    true,
+  );
   assert.strictEqual(msg.includes("HTTP 503"), true);
   assert.strictEqual(msg.includes("My Custom Registry"), false);
 });

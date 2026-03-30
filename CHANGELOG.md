@@ -4,7 +4,8 @@
 
 - add `find` / `search` command to search MCP registries and install servers interactively
 - first-run prompt to select which registries to enable (Verified essentials and Official Anthropic registry)
-- registry config stored in `~/.agents/.mcp-lock.json` and editable to add custom registries
+- registry config stored in `~/.config/add-mcp/config.json` (respects `XDG_CONFIG_HOME`), editable to add custom registries
+- automatic migration from legacy `~/.agents/.mcp-lock.json` location
 
 ## [1.6.0] - 2026-03-29
 

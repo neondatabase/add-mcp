@@ -145,7 +145,6 @@ interface Options {
   gitignore?: boolean;
 }
 
-
 async function ensureFindRegistriesConfigured(
   yes: boolean | undefined,
 ): Promise<FindRegistrySearchConfig[] | null> {
@@ -389,10 +388,15 @@ async function runFindCommand(
     process.exit(0);
   }
 
+  const findTransport =
+    options.transport === "sse" || options.transport === "http"
+      ? options.transport
+      : undefined;
+
   const installPlan = await runFind(query, {
     yes: options.yes,
     registries,
-    transport: options.transport,
+    transport: findTransport,
   });
 
   if (!installPlan) {

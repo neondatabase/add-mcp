@@ -303,7 +303,10 @@ export async function searchRegistry(
 
   for (const registry of registries) {
     try {
-      const requestUrl = buildRegistryRequestUrl(registry.serversUrl, trimmedQuery);
+      const requestUrl = buildRegistryRequestUrl(
+        registry.serversUrl,
+        trimmedQuery,
+      );
       const response = await fetch(requestUrl);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);

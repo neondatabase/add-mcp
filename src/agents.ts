@@ -3,7 +3,7 @@ import { homedir } from "os";
 import { dirname, join } from "path";
 import { existsSync } from "fs";
 import type { AgentConfig, AgentType, McpServerConfig } from "./types.js";
-import { getLastSelectedAgents, saveSelectedAgents } from "./mcp-lock.js";
+import { getLastSelectedAgents, saveSelectedAgents } from "./config.js";
 
 const home = homedir();
 

@@ -197,18 +197,18 @@ The CLI uses smart detection to find agents in your project directory and global
 
 ## Configuring Registries for Find / Search
 
-The first time you run `find` or `search`, the CLI prompts you to choose which registries to enable. Your selection is saved to `~/.agents/.mcp-lock.json` and reused on every subsequent search.
+The first time you run `find` or `search`, the CLI prompts you to choose which registries to enable. Your selection is saved to `~/.config/add-mcp/config.json` (respects `XDG_CONFIG_HOME`) and reused on every subsequent search.
 
 ### Built-in Registries
 
-| Registry | Base URL | Description |
-| -------- | -------- | ----------- |
-| **Verified essentials** | `https://mcp-registry.agent-tooling.dev/api/v1/servers` | A curated list of first-party, verified MCP servers from popular developer tools and SaaS services. Designed to surface high-quality, officially maintained servers instead of a long tail of unmaintained or third-party entries. |
-| **Official Anthropic registry** | `https://registry.modelcontextprotocol.io/v0.1/servers` | The community-driven MCP server registry maintained by Anthropic. Contains the broadest catalog of MCP servers. |
+| Registry                        | Base URL                                                | Description                                                                                                                                                                                                                        |
+| ------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Verified essentials**         | `https://mcp-registry.agent-tooling.dev/api/v1/servers` | A curated list of first-party, verified MCP servers from popular developer tools and SaaS services. Designed to surface high-quality, officially maintained servers instead of a long tail of unmaintained or third-party entries. |
+| **Official Anthropic registry** | `https://registry.modelcontextprotocol.io/v0.1/servers` | The community-driven MCP server registry maintained by Anthropic. Contains the broadest catalog of MCP servers.                                                                                                                    |
 
 ### Editing or Removing Registries
 
-Registry selections are stored in `~/.agents/.mcp-lock.json` under the `findRegistries` key. You can edit this file directly to add, remove, or reorder registries:
+Registry selections are stored in `~/.config/add-mcp/config.json` under the `findRegistries` key. You can edit this file directly to add, remove, or reorder registries:
 
 ```json
 {
@@ -234,11 +234,11 @@ To reset and re-trigger the interactive selection prompt, remove the `findRegist
 
 Any server that implements the registry API can be added as a custom entry. The CLI sends a `GET` request to the configured `serversUrl` with the following query parameters:
 
-| Parameter | Value |
-| --------- | ----- |
-| `search` | The user's search keyword (lowercased) |
-| `version` | `latest` |
-| `limit` | `30` |
+| Parameter | Value                                  |
+| --------- | -------------------------------------- |
+| `search`  | The user's search keyword (lowercased) |
+| `version` | `latest`                               |
+| `limit`   | `30`                                   |
 
 The endpoint must return JSON in this shape:
 
@@ -262,7 +262,7 @@ The endpoint must return JSON in this shape:
 }
 ```
 
-To add your own registry, append an entry to `findRegistries` in `~/.agents/.mcp-lock.json`:
+To add your own registry, append an entry to `findRegistries` in `~/.config/add-mcp/config.json`:
 
 ```json
 {

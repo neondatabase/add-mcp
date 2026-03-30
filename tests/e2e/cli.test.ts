@@ -68,10 +68,10 @@ function runCli(args: string[], cwd: string, homeDir: string) {
 }
 
 function seedFindRegistries(homeDir: string) {
-  const lockPath = join(homeDir, ".agents", ".mcp-lock.json");
-  mkdirSync(dirname(lockPath), { recursive: true });
+  const configPath = join(homeDir, ".config", "add-mcp", "config.json");
+  mkdirSync(dirname(configPath), { recursive: true });
   writeFileSync(
-    lockPath,
+    configPath,
     JSON.stringify(
       {
         version: 1,
@@ -148,12 +148,19 @@ test("E2E CLI: find -y without registry config asks to configure registries", ()
   const projectDir = createTempDir();
   const homeDir = createTempDir();
 
-  const result = runCli(["find", "postman", "-a", "cursor", "-y"], projectDir, homeDir);
+  const result = runCli(
+    ["find", "postman", "-a", "cursor", "-y"],
+    projectDir,
+    homeDir,
+  );
   assert.strictEqual(result.status, 0, "CLI should exit gracefully");
 
   const output = `${result.stdout}\n${result.stderr}`;
   assert.match(output, /Find requires configuring one or more registries/);
-  assert.match(output, /Re-run without --yes to configure registries for find\/search/);
+  assert.match(
+    output,
+    /Re-run without --yes to configure registries for find\/search/,
+  );
 });
 
 test("E2E CLI: find -y picks best match and installs remote with placeholders", () => {
