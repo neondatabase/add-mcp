@@ -239,6 +239,53 @@
   {
     "server": {
       "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "dev.firecrawl/mcp",
+      "title": "Firecrawl",
+      "description": "Web scraping, crawling, search, and structured data extraction powered by Firecrawl.",
+      "repository": {
+        "url": "https://github.com/firecrawl/firecrawl-mcp-server",
+        "source": "github"
+      },
+      "version": "3.11.0",
+      "websiteUrl": "https://docs.firecrawl.dev",
+      "packages": [
+        {
+          "registryType": "npm",
+          "registryBaseUrl": "https://registry.npmjs.org",
+          "identifier": "firecrawl-mcp",
+          "version": "3.11.0",
+          "transport": {
+            "type": "stdio"
+          },
+          "environmentVariables": [
+            {
+              "name": "FIRECRAWL_API_KEY",
+              "description": "Your Firecrawl API key",
+              "isRequired": true,
+              "isSecret": true
+            }
+          ]
+        }
+      ],
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://mcp.firecrawl.dev/v2/mcp",
+          "headers": [
+            {
+              "name": "Authorization",
+              "description": "Bearer token with a Firecrawl API key.",
+              "isRequired": true,
+              "isSecret": true
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
       "name": "com.figma/mcp",
       "title": "Figma",
       "description": "Official Figma MCP server for accessing design files, components, and design context",
