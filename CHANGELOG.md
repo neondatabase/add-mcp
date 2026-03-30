@@ -3,14 +3,9 @@
 ## [1.7.0] - 2026-03-29
 
 - add `find` / `search` command to search MCP registries and install servers interactively
-- add `find`/`search` install flags for agent and install behavior: `-a`, `-g`, `--all`, `-n`, `-t/--transport`, `--type`, `-y`, `--gitignore`
-- support transport preference in `find`/`search` (`--transport` / `--type`) when a registry entry provides multiple remotes (for example HTTP vs SSE)
-- support hybrid entries (remote + package): interactive mode lets users choose remote or stdio package; `-y` defaults to remote
-- support required registry variables/headers with prompting in interactive mode and placeholder injection in `-y` mode
-- first-run prompt to select which registries to enable (Verified essentials and Official Anthropic registry)
-- registry config stored in `~/.config/add-mcp/config.json` (respects `XDG_CONFIG_HOME`), editable to add custom registries
-- custom registry API request contract documented (`search`, `version=latest`, `limit=100`)
-- automatic migration from legacy `~/.agents/.mcp-lock.json` location
+  - first-run prompt to select which registries to enable (Verified essentials and Official Anthropic registry)
+  - deprecated legacy `~/.agents/.mcp-lock.json` location for registry config
+  - registry config and last selected agents stored in `~/.config/add-mcp/config.json` (respects `XDG_CONFIG_HOME`)
 
 ## [1.6.0] - 2026-03-29
 
