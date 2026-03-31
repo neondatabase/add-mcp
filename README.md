@@ -81,29 +81,6 @@ The CLI automatically detects agents based on your environment:
 - Interactive mode: Defaults to the last selection and shows all agents for selection
 - With `--yes`: Installs to all project-capable agents (project mode) or all global-capable agents (global mode)
 
-## Transport Types
-
-`add-mcp` supports all three transport types: HTTP, SSE, and stdio. Some agents require `type` option to be set to specify the transport type. You can use the `--type` or `--transport` option to specify the transport type:
-
-| Transport | Flag               | Description                                           |
-| --------- | ------------------ | ----------------------------------------------------- |
-| **HTTP**  | `--transport http` | Streamable HTTP (default)                             |
-| **SSE**   | `--transport sse`  | Server-Sent Events (deprecated by MCP but still used) |
-
-Local servers (npm packages, commands) always use **stdio** transport.
-
-Note that some agents like Cursor and opencode do not require the `type` information to be set.
-
-## HTTP Headers
-
-Use `--header` to pass custom headers for remote servers. The flag can be repeated.
-Header support is available for remote installs across all supported agents.
-
-## Environment Variables
-
-Use `--env` to pass environment variables for local stdio servers (packages/commands). The flag can be repeated and expects `KEY=VALUE`.
-If `--env` is provided for a remote URL install, it is ignored with a warning.
-
 ## Commands
 
 Besides the implicit add command, `add-mcp` also supports the following commands:
@@ -177,6 +154,19 @@ npx add-mcp https://mcp.example.com/mcp -a cursor -y --gitignore
 | `--all`                  | Install to all agents                                                    |
 | `--gitignore`            | Add generated config files to `.gitignore`                               |
 
+### Transport Types
+
+`add-mcp` supports all three transport types: HTTP, SSE, and stdio. Some agents require `type` option to be set to specify the transport type. You can use the `--type` or `--transport` option to specify the transport type:
+
+| Transport | Flag               | Description                                           |
+| --------- | ------------------ | ----------------------------------------------------- |
+| **HTTP**  | `--transport http` | Streamable HTTP (default)                             |
+| **SSE**   | `--transport sse`  | Server-Sent Events (deprecated by MCP but still used) |
+
+Local servers (npm packages, commands) always use **stdio** transport.
+
+Note that most agents like Cursor and opencode do not require the `type` information to be set.
+
 ## Find Command
 
 ### Usage Examples
@@ -231,6 +221,10 @@ If you run with `-y` before this one-time registry setup is completed, the CLI e
 | ------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **add-mcp curated registry**    | `https://mcp-registry.agent-tooling.dev/api/v1/servers` | A curated list of first-party, verified MCP servers from popular developer tools and SaaS services. Designed to surface high-quality, officially maintained servers instead of a long tail of unmaintained or third-party entries. |
 | **Official Anthropic registry** | `https://registry.modelcontextprotocol.io/v0.1/servers` | The community-driven MCP server registry maintained by Anthropic. Contains the broadest catalog of MCP servers.                                                                                                                    |
+
+### Missing A Server in add-mcp Curated Registry?
+
+The source of truth for the add-mcp curated registry is [registry.json](registry.json) in this repository. You can contribute to the registry by opening a pull request to add or update a server.
 
 ### Editing or Removing Registries
 
