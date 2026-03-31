@@ -736,14 +736,14 @@ test("resolveServerName returns 'server' as ultimate fallback", () => {
 test("formatRegistryFailure shows label for known registries", () => {
   const msg = formatRegistryFailure({
     registry: {
-      url: "https://mcp-registry.agent-tooling.dev/api/v1/servers",
+      url: "https://mcp.agent-tooling.dev/api/v1/servers",
       label: "add-mcp curated registry",
     },
     detail: "HTTP 500",
   });
   assert.strictEqual(msg.includes('"add-mcp curated registry"'), true);
   assert.strictEqual(
-    msg.includes("https://mcp-registry.agent-tooling.dev/api/v1/servers"),
+    msg.includes("https://mcp.agent-tooling.dev/api/v1/servers"),
     true,
   );
   assert.strictEqual(msg.includes("HTTP 500"), true);

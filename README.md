@@ -219,7 +219,7 @@ If you run with `-y` before this one-time registry setup is completed, the CLI e
 
 | Registry                        | Base URL                                                | Description                                                                                                                                                                                                                        |
 | ------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **add-mcp curated registry**    | `https://mcp-registry.agent-tooling.dev/api/v1/servers` | A curated list of first-party, verified MCP servers from popular developer tools and SaaS services. Designed to surface high-quality, officially maintained servers instead of a long tail of unmaintained or third-party entries. |
+| **add-mcp curated registry**    | `https://mcp.agent-tooling.dev/api/v1/servers` | A curated list of first-party, verified MCP servers from popular developer tools and SaaS services. Designed to surface high-quality, officially maintained servers instead of a long tail of unmaintained or third-party entries. |
 | **Official Anthropic registry** | `https://registry.modelcontextprotocol.io/v0.1/servers` | The community-driven MCP server registry maintained by Anthropic. Contains the broadest catalog of MCP servers.                                                                                                                    |
 
 ### Missing A Server in add-mcp Curated Registry?
@@ -235,7 +235,7 @@ Registry selections are stored in `~/.config/add-mcp/config.json` under the `fin
   "version": 1,
   "findRegistries": [
     {
-      "url": "https://mcp-registry.agent-tooling.dev/api/v1/servers",
+      "url": "https://mcp.agent-tooling.dev/api/v1/servers",
       "label": "add-mcp curated registry"
     },
     {

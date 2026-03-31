@@ -199,7 +199,7 @@ export function resolveOfficialRegistryServersUrl(): string {
 }
 
 const VERIFIED_ESSENTIALS_DEFAULT_SERVERS_URL =
-  "https://mcp-registry.agent-tooling.dev/api/v1/servers";
+  "https://mcp.agent-tooling.dev/api/v1/servers";
 
 export function getDefaultFindRegistries(): FindRegistrySearchConfig[] {
   return [

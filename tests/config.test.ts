@@ -108,7 +108,7 @@ async function run() {
     setupTempHome();
     await saveFindRegistries([
       {
-        url: "https://mcp-registry.agent-tooling.dev/api/v1/servers",
+        url: "https://mcp.agent-tooling.dev/api/v1/servers",
         label: "add-mcp curated registry",
       },
       {
@@ -119,7 +119,7 @@ async function run() {
     const registries = await getFindRegistries();
     assert.deepStrictEqual(registries, [
       {
-        url: "https://mcp-registry.agent-tooling.dev/api/v1/servers",
+        url: "https://mcp.agent-tooling.dev/api/v1/servers",
         label: "add-mcp curated registry",
       },
       {
@@ -148,7 +148,7 @@ async function run() {
         lastSelectedAgents: ["cursor", "claude-code"],
         findRegistries: [
           {
-            url: "https://mcp-registry.agent-tooling.dev/api/v1/servers",
+            url: "https://mcp.agent-tooling.dev/api/v1/servers",
             label: "add-mcp curated registry",
           },
         ],

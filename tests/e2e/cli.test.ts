@@ -77,7 +77,7 @@ function seedFindRegistries(homeDir: string) {
         version: 1,
         findRegistries: [
           {
-            url: "https://mcp-registry.agent-tooling.dev/api/v1/servers",
+            url: "https://mcp.agent-tooling.dev/api/v1/servers",
             label: "add-mcp curated registry",
           },
           {
