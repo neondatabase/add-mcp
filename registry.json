@@ -590,6 +590,21 @@
   {
     "server": {
       "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "com.revenuecat/mcp",
+      "title": "RevenueCat",
+      "description": "Official RevenueCat MCP server for managing projects and accessing RevenueCat data.",
+      "version": "1.0.0",
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://mcp.revenuecat.ai/mcp"
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
       "name": "com.resend/mcp",
       "title": "Resend",
       "description": "Official Resend MCP server for email operations and audience management.",
