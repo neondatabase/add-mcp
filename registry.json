@@ -349,6 +349,26 @@
   {
     "server": {
       "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "com.legaldatahunter/mcp",
+      "title": "Legal Data Hunter",
+      "description": "Search 18M+ legal documents worldwide — case law, legislation, and doctrine across 110+ countries. Hybrid semantic + keyword search with filters for court, jurisdiction, language, and date range.",
+      "version": "1.0.0",
+      "websiteUrl": "https://legaldatahunter.com",
+      "repository": {
+        "url": "https://github.com/worldwidelaw/legal-sources",
+        "source": "github"
+      },
+      "remotes": [
+        {
+          "type": "streamable-http",
+          "url": "https://legaldatahunter.com/mcp"
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
       "name": "com.mux/mcp",
       "title": "Mux",
       "description": "The official MCP Server for the Mux API",
