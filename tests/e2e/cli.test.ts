@@ -821,9 +821,74 @@ test("sync: renames servers to canonical name across agents with -y", () => {
     "Claude Code should have 'neon' after sync",
   );
   assert.strictEqual(
+    claudeConfig.mcpServers.neon.type,
+    "http",
+    "Claude Code entry should include type: http",
+  );
+  assert.strictEqual(
+    claudeConfig.mcpServers.neon.url,
+    "https://mcp.neon.tech/mcp",
+    "Claude Code entry should include the URL",
+  );
+  assert.strictEqual(
     claudeConfig.mcpServers["neon-mcp"],
     undefined,
     "Claude Code should no longer have 'neon-mcp'",
+  );
+});
+
+test("sync: reconstructs required fields when syncing Cursor -> Claude Code", () => {
+  const homeDir = createTempDir();
+  const projectDir = createTempDir();
+
+  // Cursor stores remote servers without 'type' (its transform strips it)
+  const cursorDir = join(projectDir, ".cursor");
+  mkdirSync(cursorDir, { recursive: true });
+  writeFileSync(
+    join(cursorDir, "mcp.json"),
+    JSON.stringify({
+      mcpServers: {
+        vercel: { url: "https://vercel.com/mcp" },
+        neon: { url: "https://mcp.neon.tech/mcp" },
+      },
+    }),
+  );
+
+  // Claude Code has no servers yet, but .mcp.json exists
+  const claudeConfigPath = join(projectDir, ".mcp.json");
+  writeFileSync(claudeConfigPath, JSON.stringify({ mcpServers: {} }));
+
+  const result = runCli(["sync", "-y"], projectDir, homeDir);
+
+  if (result.status !== 0) {
+    throw new Error(
+      `CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`,
+    );
+  }
+
+  const claudeConfig = JSON.parse(readFileSync(claudeConfigPath, "utf-8"));
+
+  // Both servers should be synced to Claude Code with type: "http"
+  assert.ok(claudeConfig.mcpServers.vercel, "Claude Code should have 'vercel'");
+  assert.strictEqual(
+    claudeConfig.mcpServers.vercel.type,
+    "http",
+    "vercel should have type: http even though Cursor didn't store it",
+  );
+  assert.strictEqual(
+    claudeConfig.mcpServers.vercel.url,
+    "https://vercel.com/mcp",
+  );
+
+  assert.ok(claudeConfig.mcpServers.neon, "Claude Code should have 'neon'");
+  assert.strictEqual(
+    claudeConfig.mcpServers.neon.type,
+    "http",
+    "neon should have type: http even though Cursor didn't store it",
+  );
+  assert.strictEqual(
+    claudeConfig.mcpServers.neon.url,
+    "https://mcp.neon.tech/mcp",
   );
 });
 

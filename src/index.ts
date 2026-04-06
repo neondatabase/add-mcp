@@ -1034,10 +1034,27 @@ async function runSyncCommand(options: Options): Promise<void> {
   console.log();
 }
 
+const TRANSPORT_ALIASES: Record<string, "http" | "sse"> = {
+  http: "http",
+  sse: "sse",
+  streamable_http: "http",
+  streamableHttp: "http",
+  "streamable-http": "http",
+  remote: "http",
+};
+
+function normalizeTransportType(
+  raw: unknown,
+): import("./types.js").TransportType {
+  if (typeof raw === "string" && raw in TRANSPORT_ALIASES) {
+    return TRANSPORT_ALIASES[raw]!;
+  }
+  return "http";
+}
+
 function buildServerConfigFromStored(
   config: Record<string, unknown>,
 ): import("./types.js").McpServerConfig {
-  // Extract standard McpServerConfig fields from any agent-specific shape
   const url =
     typeof config.url === "string"
       ? config.url
@@ -1048,18 +1065,22 @@ function buildServerConfigFromStored(
           : undefined;
 
   if (url) {
-    const result: import("./types.js").McpServerConfig = { url };
-    const transport = config.type;
-    if (transport === "sse" || transport === "http") {
-      result.type = transport;
+    const result: import("./types.js").McpServerConfig = {
+      type: normalizeTransportType(config.type),
+      url,
+    };
+
+    const headers =
+      config.headers && typeof config.headers === "object"
+        ? (config.headers as Record<string, string>)
+        : config.http_headers && typeof config.http_headers === "object"
+          ? (config.http_headers as Record<string, string>)
+          : undefined;
+
+    if (headers && Object.keys(headers).length > 0) {
+      result.headers = headers;
     }
-    if (
-      config.headers &&
-      typeof config.headers === "object" &&
-      Object.keys(config.headers).length > 0
-    ) {
-      result.headers = config.headers as Record<string, string>;
-    }
+
     return result;
   }
 
