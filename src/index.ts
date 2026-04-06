@@ -32,8 +32,17 @@ import {
 import {
   buildServerConfig,
   installServer,
+  installServerForAgent,
   updateGitignoreWithPaths,
 } from "./installer.js";
+import {
+  gatherInstalledServers,
+  findMatchingServers,
+  extractServerIdentity,
+  type AgentServers,
+  type InstalledServer,
+} from "./reader.js";
+import { removeServerFromConfig } from "./formats/index.js";
 
 import packageJson from "../package.json" with { type: "json" };
 
@@ -197,7 +206,13 @@ function extractOptions(
   return raw as Options;
 }
 
-function extractFindOptionsFromArgv(): Partial<Options> {
+/**
+ * Commander does not reliably route flags like -a, -y, -g to subcommands
+ * when the parent program also defines them. This function re-parses
+ * process.argv to extract shared option values regardless of which
+ * Commander level consumed them.
+ */
+function extractSubcommandOptionsFromArgv(): Partial<Options> {
   const argv = process.argv.slice(2);
   const result: Partial<Options> = {};
 
@@ -395,7 +410,7 @@ async function runFindCommand(
 ) {
   const options = {
     ...extractOptions(rawOptions),
-    ...extractFindOptionsFromArgv(),
+    ...extractSubcommandOptionsFromArgv(),
   };
   const query = (keyword ?? "").trim();
 
@@ -480,7 +495,626 @@ program
     },
   );
 
+// ── list command ──────────────────────────────────────────────────────────
+
+program
+  .command("list")
+  .description("List installed MCP servers across detected agents")
+  .option("-g, --global", "List global configs instead of project-level")
+  .option("-a, --agent <agent>", "Filter to specific agent(s)", collect, [])
+  .action(async (rawOptions: Options | { opts: () => Options }) => {
+    const options = {
+      ...extractOptions(rawOptions),
+      ...extractSubcommandOptionsFromArgv(),
+    };
+    await runListCommand(options);
+  });
+
+// ── remove command ───────────────────────────────────────────────────────
+
+program
+  .command("remove <query>")
+  .description("Remove an MCP server from agent configurations")
+  .option("-g, --global", "Remove from global configs instead of project-level")
+  .option("-a, --agent <agent>", "Filter to specific agent(s)", collect, [])
+  .option("-y, --yes", "Remove all matches without prompting")
+  .action(
+    async (query: string, rawOptions: Options | { opts: () => Options }) => {
+      const options = {
+        ...extractOptions(rawOptions),
+        ...extractSubcommandOptionsFromArgv(),
+      };
+      await runRemoveCommand(query, options);
+    },
+  );
+
+// ── sync / unify command ─────────────────────────────────────────────────
+
+program
+  .command("sync")
+  .description(
+    "Synchronize server names and installations across all detected agents",
+  )
+  .option("-g, --global", "Sync global configs instead of project-level")
+  .option("-y, --yes", "Skip confirmation prompts")
+  .action(async (rawOptions: Options | { opts: () => Options }) => {
+    const options = {
+      ...extractOptions(rawOptions),
+      ...extractSubcommandOptionsFromArgv(),
+    };
+    await runSyncCommand(options);
+  });
+
+program
+  .command("unify")
+  .description("Alias for sync")
+  .option("-g, --global", "Sync global configs instead of project-level")
+  .option("-y, --yes", "Skip confirmation prompts")
+  .action(async (rawOptions: Options | { opts: () => Options }) => {
+    const options = {
+      ...extractOptions(rawOptions),
+      ...extractSubcommandOptionsFromArgv(),
+    };
+    await runSyncCommand(options);
+  });
+
 program.parse();
+
+// ── list implementation ──────────────────────────────────────────────────
+
+async function runListCommand(options: Options): Promise<void> {
+  showLogo();
+  console.log();
+
+  const explicitAgents = resolveAgentFlags(options.agent);
+
+  const agentServersList = await gatherInstalledServers({
+    global: options.global,
+    agents: explicitAgents.length > 0 ? explicitAgents : undefined,
+  });
+
+  if (agentServersList.length === 0) {
+    const hint = options.global
+      ? "No agents detected globally. Use -a to target a specific agent."
+      : "No agents detected in this project. Use -g for global or -a to target a specific agent.";
+    p.log.info(hint);
+    console.log();
+    return;
+  }
+
+  for (const agentServers of agentServersList) {
+    if (!agentServers.detected) {
+      console.log(
+        `${TEXT}${agentServers.displayName}:${RESET} ${DIM}not detected${RESET}`,
+      );
+      continue;
+    }
+
+    if (agentServers.servers.length === 0) {
+      console.log(
+        `${TEXT}${agentServers.displayName}:${RESET} ${DIM}no servers configured${RESET}`,
+      );
+      continue;
+    }
+
+    console.log(`${TEXT}${agentServers.displayName}:${RESET}`);
+    for (const server of agentServers.servers) {
+      const identityHint = server.identity
+        ? ` ${DIM}(${server.identity})${RESET}`
+        : "";
+      console.log(
+        `  ${DIM}-${RESET} ${TEXT}${server.serverName}${RESET}${identityHint}`,
+      );
+    }
+  }
+
+  console.log();
+}
+
+// ── remove implementation ────────────────────────────────────────────────
+
+async function runRemoveCommand(
+  query: string,
+  options: Options,
+): Promise<void> {
+  showLogo();
+  console.log();
+
+  const explicitAgents = resolveAgentFlags(options.agent);
+
+  const agentServersList = await gatherInstalledServers({
+    global: options.global,
+    agents: explicitAgents.length > 0 ? explicitAgents : undefined,
+  });
+
+  const matches = findMatchingServers(agentServersList, query);
+
+  if (matches.length === 0) {
+    p.log.info(`No matching servers found for '${query}'`);
+    console.log();
+    return;
+  }
+
+  // Build selection options
+  const matchOptions = matches.map((m, i) => ({
+    value: i,
+    label: `${m.serverName} (${agents[m.agentType].displayName})`,
+    hint: m.identity || m.configPath,
+  }));
+
+  let selectedIndices: number[];
+
+  if (options.yes) {
+    selectedIndices = matches.map((_, i) => i);
+    p.log.info(
+      `Removing ${matches.length} server${matches.length !== 1 ? "s" : ""} matching '${query}'`,
+    );
+  } else {
+    const selected = await p.multiselect({
+      message: `Select servers to remove (${matches.length} match${matches.length !== 1 ? "es" : ""} found)`,
+      options: matchOptions,
+      required: false,
+      initialValues: matches.map((_, i) => i),
+    });
+
+    if (p.isCancel(selected)) {
+      p.log.info("No changes made");
+      console.log();
+      return;
+    }
+
+    selectedIndices = selected as number[];
+
+    if (selectedIndices.length === 0) {
+      p.log.info("No changes made");
+      console.log();
+      return;
+    }
+  }
+
+  let removedCount = 0;
+  const affectedAgents = new Set<string>();
+
+  for (const idx of selectedIndices) {
+    const server = matches[idx]!;
+    const agent = agents[server.agentType];
+    try {
+      removeServerFromConfig(
+        server.configPath,
+        agent.format,
+        getConfigKeyForServer(server),
+        server.serverName,
+      );
+      removedCount++;
+      affectedAgents.add(agent.displayName);
+    } catch (error) {
+      p.log.error(
+        `Failed to remove ${server.serverName} from ${agent.displayName}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  }
+
+  if (removedCount > 0) {
+    p.log.success(
+      `Removed ${removedCount} server${removedCount !== 1 ? "s" : ""} from ${affectedAgents.size} agent${affectedAgents.size !== 1 ? "s" : ""}`,
+    );
+  }
+
+  console.log();
+}
+
+function getConfigKeyForServer(server: InstalledServer): string {
+  const agent = agents[server.agentType];
+  if (server.scope === "local" && agent.localConfigKey) {
+    return agent.localConfigKey;
+  }
+  return agent.configKey;
+}
+
+// ── sync implementation ──────────────────────────────────────────────────
+
+interface SyncGroup {
+  identity: string;
+  entries: InstalledServer[];
+  canonicalName: string;
+  canonicalConfig: Record<string, unknown>;
+  hasConflict: boolean;
+  conflictReason?: string;
+}
+
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a === null || b === null) return false;
+  if (a === undefined || b === undefined) return a === b;
+  if (typeof a !== typeof b) return false;
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    return a.every((val, i) => deepEqual(val, b[i]));
+  }
+
+  if (typeof a === "object" && typeof b === "object") {
+    const aObj = a as Record<string, unknown>;
+    const bObj = b as Record<string, unknown>;
+    const aKeys = Object.keys(aObj).sort();
+    const bKeys = Object.keys(bObj).sort();
+    if (!deepEqual(aKeys, bKeys)) return false;
+    return aKeys.every((key) => deepEqual(aObj[key], bObj[key]));
+  }
+
+  return false;
+}
+
+function pickCanonicalName(entries: InstalledServer[]): string {
+  const nameFreq = new Map<string, number>();
+  for (const entry of entries) {
+    nameFreq.set(entry.serverName, (nameFreq.get(entry.serverName) ?? 0) + 1);
+  }
+
+  const names = [...nameFreq.entries()];
+  names.sort(([nameA, freqA], [nameB, freqB]) => {
+    // Shortest first
+    if (nameA.length !== nameB.length) return nameA.length - nameB.length;
+    // Most frequent first
+    if (freqA !== freqB) return freqB - freqA;
+    // Alphabetical
+    return nameA.localeCompare(nameB);
+  });
+
+  return names[0]![0];
+}
+
+function extractConflictFields(config: Record<string, unknown>): {
+  headers: unknown;
+  env: unknown;
+  args: unknown;
+} {
+  return {
+    headers: config.headers ?? config.http_headers ?? null,
+    env: config.env ?? config.envs ?? config.environment ?? null,
+    args: config.args ?? null,
+  };
+}
+
+function buildSyncGroups(agentServersList: AgentServers[]): SyncGroup[] {
+  // Group servers by identity
+  const byIdentity = new Map<string, InstalledServer[]>();
+
+  for (const agentServers of agentServersList) {
+    for (const server of agentServers.servers) {
+      if (!server.identity) continue;
+      const existing = byIdentity.get(server.identity) ?? [];
+      existing.push(server);
+      byIdentity.set(server.identity, existing);
+    }
+  }
+
+  const groups: SyncGroup[] = [];
+
+  for (const [identity, entries] of byIdentity) {
+    // Check for conflicts across entries
+    const fieldSets = entries.map((e) => extractConflictFields(e.config));
+    const reference = fieldSets[0]!;
+    let hasConflict = false;
+    let conflictReason: string | undefined;
+
+    for (let i = 1; i < fieldSets.length; i++) {
+      const other = fieldSets[i]!;
+      if (!deepEqual(reference.headers, other.headers)) {
+        hasConflict = true;
+        conflictReason = `headers differ between ${agents[entries[0]!.agentType].displayName} and ${agents[entries[i]!.agentType].displayName}`;
+        break;
+      }
+      if (!deepEqual(reference.env, other.env)) {
+        hasConflict = true;
+        conflictReason = `env differs between ${agents[entries[0]!.agentType].displayName} and ${agents[entries[i]!.agentType].displayName}`;
+        break;
+      }
+      if (!deepEqual(reference.args, other.args)) {
+        hasConflict = true;
+        conflictReason = `args differ between ${agents[entries[0]!.agentType].displayName} and ${agents[entries[i]!.agentType].displayName}`;
+        break;
+      }
+    }
+
+    groups.push({
+      identity,
+      entries,
+      canonicalName: pickCanonicalName(entries),
+      canonicalConfig: entries[0]!.config,
+      hasConflict,
+      conflictReason,
+    });
+  }
+
+  return groups;
+}
+
+async function runSyncCommand(options: Options): Promise<void> {
+  showLogo();
+  console.log();
+
+  const agentServersList = await gatherInstalledServers({
+    global: options.global,
+  });
+
+  const agentsWithServers = agentServersList.filter(
+    (a) => a.servers.length > 0,
+  );
+
+  if (agentServersList.length < 2) {
+    p.log.info("Need at least 2 detected agents to sync");
+    console.log();
+    return;
+  }
+
+  const groups = buildSyncGroups(agentServersList);
+  const detectedAgentTypes = new Set(agentServersList.map((a) => a.agentType));
+
+  // Determine what needs to change
+  const renames: Array<{
+    group: SyncGroup;
+    agentType: AgentType;
+    oldName: string;
+  }> = [];
+  const additions: Array<{
+    group: SyncGroup;
+    agentType: AgentType;
+  }> = [];
+  const skipped: SyncGroup[] = [];
+
+  for (const group of groups) {
+    if (group.hasConflict) {
+      skipped.push(group);
+      continue;
+    }
+
+    const presentAgents = new Set(group.entries.map((e) => e.agentType));
+
+    // Find renames (agents that have this server under a different name)
+    for (const entry of group.entries) {
+      if (entry.serverName !== group.canonicalName) {
+        renames.push({
+          group,
+          agentType: entry.agentType,
+          oldName: entry.serverName,
+        });
+      }
+    }
+
+    // Find agents that are missing this server
+    for (const agentType of detectedAgentTypes) {
+      if (!presentAgents.has(agentType)) {
+        additions.push({ group, agentType });
+      }
+    }
+  }
+
+  if (renames.length === 0 && additions.length === 0 && skipped.length === 0) {
+    p.log.info("All servers are already in sync");
+    console.log();
+    return;
+  }
+
+  // Show sync plan
+  const planLines: string[] = [];
+
+  if (renames.length > 0) {
+    planLines.push(chalk.cyan("Renames:"));
+    for (const r of renames) {
+      planLines.push(
+        `  ${agents[r.agentType].displayName}: ${r.oldName} → ${r.group.canonicalName}`,
+      );
+    }
+  }
+
+  if (additions.length > 0) {
+    planLines.push(chalk.cyan("Additions:"));
+    for (const a of additions) {
+      planLines.push(
+        `  ${agents[a.agentType].displayName}: + ${a.group.canonicalName} (${a.group.identity})`,
+      );
+    }
+  }
+
+  if (skipped.length > 0) {
+    planLines.push(chalk.yellow("Skipped (conflicts):"));
+    for (const s of skipped) {
+      planLines.push(`  ${s.identity}: ${s.conflictReason}`);
+    }
+  }
+
+  if (renames.length === 0 && additions.length === 0) {
+    // Only skipped items, nothing actionable
+    p.note(planLines.join("\n"), "Sync Plan");
+    p.log.info(
+      "All servers are already in sync (some skipped due to conflicts)",
+    );
+    console.log();
+    return;
+  }
+
+  p.note(planLines.join("\n"), "Sync Plan");
+
+  if (!options.yes) {
+    const confirmed = await p.confirm({
+      message: "Proceed with sync?",
+    });
+
+    if (p.isCancel(confirmed) || !confirmed) {
+      p.log.info("No changes made");
+      console.log();
+      return;
+    }
+  }
+
+  const scope: "local" | "global" = options.global ? "global" : "local";
+  let changeCount = 0;
+
+  // Write-first: install canonical names
+  for (const rename of renames) {
+    const { group, agentType } = rename;
+    const result = installServerForAgent(
+      group.canonicalName,
+      buildServerConfigFromStored(group.canonicalConfig),
+      agentType,
+      { local: scope === "local" },
+    );
+    if (result.success) {
+      changeCount++;
+    } else {
+      p.log.error(
+        `Failed to write ${group.canonicalName} to ${agents[agentType].displayName}: ${result.error}`,
+      );
+    }
+  }
+
+  for (const addition of additions) {
+    const { group, agentType } = addition;
+    const result = installServerForAgent(
+      group.canonicalName,
+      buildServerConfigFromStored(group.canonicalConfig),
+      agentType,
+      { local: scope === "local" },
+    );
+    if (result.success) {
+      changeCount++;
+    } else {
+      p.log.error(
+        `Failed to add ${group.canonicalName} to ${agents[agentType].displayName}: ${result.error}`,
+      );
+    }
+  }
+
+  // Delete-second: remove old aliases
+  for (const rename of renames) {
+    const { group, agentType, oldName } = rename;
+    const agentConfig = agents[agentType];
+    const entry = group.entries.find((e) => e.agentType === agentType);
+    if (!entry) continue;
+
+    try {
+      removeServerFromConfig(
+        entry.configPath,
+        agentConfig.format,
+        getConfigKeyForServer(entry),
+        oldName,
+      );
+    } catch (error) {
+      p.log.error(
+        `Failed to remove old alias ${oldName} from ${agentConfig.displayName}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  }
+
+  p.log.success(
+    `Synced ${changeCount} server${changeCount !== 1 ? "s" : ""} across ${detectedAgentTypes.size} agent${detectedAgentTypes.size !== 1 ? "s" : ""}`,
+  );
+  console.log();
+}
+
+const TRANSPORT_ALIASES: Record<string, "http" | "sse"> = {
+  http: "http",
+  sse: "sse",
+  streamable_http: "http",
+  streamableHttp: "http",
+  "streamable-http": "http",
+  remote: "http",
+};
+
+function normalizeTransportType(
+  raw: unknown,
+): import("./types.js").TransportType {
+  if (typeof raw === "string" && raw in TRANSPORT_ALIASES) {
+    return TRANSPORT_ALIASES[raw]!;
+  }
+  return "http";
+}
+
+function buildServerConfigFromStored(
+  config: Record<string, unknown>,
+): import("./types.js").McpServerConfig {
+  const url =
+    typeof config.url === "string"
+      ? config.url
+      : typeof config.uri === "string"
+        ? config.uri
+        : typeof config.serverUrl === "string"
+          ? config.serverUrl
+          : undefined;
+
+  if (url) {
+    const result: import("./types.js").McpServerConfig = {
+      type: normalizeTransportType(config.type),
+      url,
+    };
+
+    const headers =
+      config.headers && typeof config.headers === "object"
+        ? (config.headers as Record<string, string>)
+        : config.http_headers && typeof config.http_headers === "object"
+          ? (config.http_headers as Record<string, string>)
+          : undefined;
+
+    if (headers && Object.keys(headers).length > 0) {
+      result.headers = headers;
+    }
+
+    return result;
+  }
+
+  const command =
+    typeof config.command === "string"
+      ? config.command
+      : typeof config.cmd === "string"
+        ? config.cmd
+        : undefined;
+
+  const args = Array.isArray(config.args)
+    ? config.args.filter((a): a is string => typeof a === "string")
+    : [];
+
+  const env =
+    config.env && typeof config.env === "object"
+      ? (config.env as Record<string, string>)
+      : config.envs && typeof config.envs === "object"
+        ? (config.envs as Record<string, string>)
+        : config.environment && typeof config.environment === "object"
+          ? (config.environment as Record<string, string>)
+          : undefined;
+
+  const result: import("./types.js").McpServerConfig = {};
+  if (command) result.command = command;
+  if (args.length > 0) result.args = args;
+  if (env && Object.keys(env).length > 0) result.env = env;
+  return result;
+}
+
+// ── helper: resolve -a flags ─────────────────────────────────────────────
+
+function resolveAgentFlags(agentFlags?: string[]): AgentType[] {
+  if (!agentFlags || agentFlags.length === 0) return [];
+
+  const resolved: AgentType[] = [];
+  const invalid: string[] = [];
+
+  for (const input of agentFlags) {
+    const agentType = resolveAgentType(input);
+    if (agentType) {
+      resolved.push(agentType);
+    } else {
+      invalid.push(input);
+    }
+  }
+
+  if (invalid.length > 0) {
+    p.log.error(`Invalid agents: ${invalid.join(", ")}`);
+    p.log.info(`Valid agents: ${getAgentTypes().join(", ")}`);
+    process.exit(1);
+  }
+
+  return resolved;
+}
 
 function listAgents(): void {
   showLogo();

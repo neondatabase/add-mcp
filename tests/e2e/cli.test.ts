@@ -605,6 +605,356 @@ test("E2E CLI: remote install with --env warns and succeeds", () => {
   const configPath = join(projectDir, ".cursor", "mcp.json");
   assert.strictEqual(existsSync(configPath), true);
 });
+// ── list command tests ───────────────────────────────────────────────────
+
+test("list: shows servers for detected agents in project", () => {
+  const homeDir = createTempDir();
+  const projectDir = createTempDir();
+
+  // Seed Cursor config with servers
+  const cursorDir = join(projectDir, ".cursor");
+  mkdirSync(cursorDir, { recursive: true });
+  writeFileSync(
+    join(cursorDir, "mcp.json"),
+    JSON.stringify({
+      mcpServers: {
+        neon: { url: "https://mcp.neon.tech/mcp" },
+        github: { command: "npx", args: ["-y", "mcp-server-github"] },
+      },
+    }),
+  );
+
+  // Seed Claude Code config
+  writeFileSync(
+    join(projectDir, ".mcp.json"),
+    JSON.stringify({
+      mcpServers: {
+        context7: { url: "https://mcp.context7.com/mcp" },
+      },
+    }),
+  );
+
+  const result = runCli(["list"], projectDir, homeDir);
+
+  const output = `${result.stdout}\n${result.stderr}`;
+  assert.match(output, /Cursor/);
+  assert.match(output, /neon/);
+  assert.match(output, /github/);
+  assert.match(output, /Claude Code/);
+  assert.match(output, /context7/);
+});
+
+test("list: shows 'no servers configured' when agent detected but empty", () => {
+  const homeDir = createTempDir();
+  const projectDir = createTempDir();
+
+  // Create .cursor dir but with empty mcpServers
+  const cursorDir = join(projectDir, ".cursor");
+  mkdirSync(cursorDir, { recursive: true });
+  writeFileSync(
+    join(cursorDir, "mcp.json"),
+    JSON.stringify({ mcpServers: {} }),
+  );
+
+  const result = runCli(["list"], projectDir, homeDir);
+
+  const output = `${result.stdout}\n${result.stderr}`;
+  assert.match(output, /Cursor/);
+  assert.match(output, /no servers configured/);
+});
+
+test("list: shows 'not detected' when -a targets absent agent", () => {
+  const homeDir = createTempDir();
+  const projectDir = createTempDir();
+
+  const result = runCli(["list", "-a", "cursor"], projectDir, homeDir);
+
+  const output = `${result.stdout}\n${result.stderr}`;
+  assert.match(output, /Cursor/);
+  assert.match(output, /not detected/);
+});
+
+test("list: shows help when no agents detected", () => {
+  const homeDir = createTempDir();
+  const projectDir = createTempDir();
+
+  const result = runCli(["list"], projectDir, homeDir);
+
+  const output = `${result.stdout}\n${result.stderr}`;
+  assert.match(output, /No agents detected/);
+});
+
+// ── remove command tests ─────────────────────────────────────────────────
+
+test("remove: removes server by name with -y", () => {
+  const homeDir = createTempDir();
+  const projectDir = createTempDir();
+
+  const cursorDir = join(projectDir, ".cursor");
+  mkdirSync(cursorDir, { recursive: true });
+  const configPath = join(cursorDir, "mcp.json");
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      mcpServers: {
+        neon: { url: "https://mcp.neon.tech/mcp" },
+        github: { command: "npx", args: ["-y", "mcp-server-github"] },
+      },
+    }),
+  );
+
+  const result = runCli(["remove", "neon", "-y"], projectDir, homeDir);
+
+  if (result.status !== 0) {
+    throw new Error(
+      `CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`,
+    );
+  }
+
+  const config = JSON.parse(readFileSync(configPath, "utf-8"));
+  assert.strictEqual(config.mcpServers.neon, undefined);
+  assert.ok(config.mcpServers.github);
+});
+
+test("remove: matches by URL identity with -y", () => {
+  const homeDir = createTempDir();
+  const projectDir = createTempDir();
+
+  const cursorDir = join(projectDir, ".cursor");
+  mkdirSync(cursorDir, { recursive: true });
+  const configPath = join(cursorDir, "mcp.json");
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      mcpServers: {
+        "my-neon": { url: "https://mcp.neon.tech/mcp" },
+      },
+    }),
+  );
+
+  const result = runCli(
+    ["remove", "https://mcp.neon.tech/mcp", "-y"],
+    projectDir,
+    homeDir,
+  );
+
+  if (result.status !== 0) {
+    throw new Error(
+      `CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`,
+    );
+  }
+
+  const config = JSON.parse(readFileSync(configPath, "utf-8"));
+  assert.strictEqual(config.mcpServers["my-neon"], undefined);
+});
+
+test("remove: prints message when no matches found", () => {
+  const homeDir = createTempDir();
+  const projectDir = createTempDir();
+
+  const cursorDir = join(projectDir, ".cursor");
+  mkdirSync(cursorDir, { recursive: true });
+  writeFileSync(
+    join(cursorDir, "mcp.json"),
+    JSON.stringify({
+      mcpServers: { neon: { url: "https://mcp.neon.tech/mcp" } },
+    }),
+  );
+
+  const result = runCli(["remove", "nonexistent", "-y"], projectDir, homeDir);
+
+  const output = `${result.stdout}\n${result.stderr}`;
+  assert.match(output, /No matching servers found/);
+});
+
+// ── sync command tests ───────────────────────────────────────────────────
+
+test("sync: renames servers to canonical name across agents with -y", () => {
+  const homeDir = createTempDir();
+  const projectDir = createTempDir();
+
+  // Cursor: "neon" -> URL
+  const cursorDir = join(projectDir, ".cursor");
+  mkdirSync(cursorDir, { recursive: true });
+  const cursorConfigPath = join(cursorDir, "mcp.json");
+  writeFileSync(
+    cursorConfigPath,
+    JSON.stringify({
+      mcpServers: {
+        neon: { url: "https://mcp.neon.tech/mcp" },
+      },
+    }),
+  );
+
+  // Claude Code: "neon-mcp" -> same URL
+  const claudeConfigPath = join(projectDir, ".mcp.json");
+  writeFileSync(
+    claudeConfigPath,
+    JSON.stringify({
+      mcpServers: {
+        "neon-mcp": { url: "https://mcp.neon.tech/mcp" },
+      },
+    }),
+  );
+
+  const result = runCli(["sync", "-y"], projectDir, homeDir);
+
+  if (result.status !== 0) {
+    throw new Error(
+      `CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`,
+    );
+  }
+
+  // "neon" is shorter than "neon-mcp", so canonical name should be "neon"
+  const cursorConfig = JSON.parse(readFileSync(cursorConfigPath, "utf-8"));
+  assert.ok(cursorConfig.mcpServers.neon, "Cursor should keep 'neon'");
+
+  const claudeConfig = JSON.parse(readFileSync(claudeConfigPath, "utf-8"));
+  assert.ok(
+    claudeConfig.mcpServers.neon,
+    "Claude Code should have 'neon' after sync",
+  );
+  assert.strictEqual(
+    claudeConfig.mcpServers.neon.type,
+    "http",
+    "Claude Code entry should include type: http",
+  );
+  assert.strictEqual(
+    claudeConfig.mcpServers.neon.url,
+    "https://mcp.neon.tech/mcp",
+    "Claude Code entry should include the URL",
+  );
+  assert.strictEqual(
+    claudeConfig.mcpServers["neon-mcp"],
+    undefined,
+    "Claude Code should no longer have 'neon-mcp'",
+  );
+});
+
+test("sync: reconstructs required fields when syncing Cursor -> Claude Code", () => {
+  const homeDir = createTempDir();
+  const projectDir = createTempDir();
+
+  // Cursor stores remote servers without 'type' (its transform strips it)
+  const cursorDir = join(projectDir, ".cursor");
+  mkdirSync(cursorDir, { recursive: true });
+  writeFileSync(
+    join(cursorDir, "mcp.json"),
+    JSON.stringify({
+      mcpServers: {
+        vercel: { url: "https://vercel.com/mcp" },
+        neon: { url: "https://mcp.neon.tech/mcp" },
+      },
+    }),
+  );
+
+  // Claude Code has no servers yet, but .mcp.json exists
+  const claudeConfigPath = join(projectDir, ".mcp.json");
+  writeFileSync(claudeConfigPath, JSON.stringify({ mcpServers: {} }));
+
+  const result = runCli(["sync", "-y"], projectDir, homeDir);
+
+  if (result.status !== 0) {
+    throw new Error(
+      `CLI failed.\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`,
+    );
+  }
+
+  const claudeConfig = JSON.parse(readFileSync(claudeConfigPath, "utf-8"));
+
+  // Both servers should be synced to Claude Code with type: "http"
+  assert.ok(claudeConfig.mcpServers.vercel, "Claude Code should have 'vercel'");
+  assert.strictEqual(
+    claudeConfig.mcpServers.vercel.type,
+    "http",
+    "vercel should have type: http even though Cursor didn't store it",
+  );
+  assert.strictEqual(
+    claudeConfig.mcpServers.vercel.url,
+    "https://vercel.com/mcp",
+  );
+
+  assert.ok(claudeConfig.mcpServers.neon, "Claude Code should have 'neon'");
+  assert.strictEqual(
+    claudeConfig.mcpServers.neon.type,
+    "http",
+    "neon should have type: http even though Cursor didn't store it",
+  );
+  assert.strictEqual(
+    claudeConfig.mcpServers.neon.url,
+    "https://mcp.neon.tech/mcp",
+  );
+});
+
+test("sync: skips servers with header conflicts", () => {
+  const homeDir = createTempDir();
+  const projectDir = createTempDir();
+
+  // Cursor: neon with headers
+  const cursorDir = join(projectDir, ".cursor");
+  mkdirSync(cursorDir, { recursive: true });
+  writeFileSync(
+    join(cursorDir, "mcp.json"),
+    JSON.stringify({
+      mcpServers: {
+        neon: {
+          url: "https://mcp.neon.tech/mcp",
+          headers: { Authorization: "Bearer token-a" },
+        },
+      },
+    }),
+  );
+
+  // Claude Code: neon-mcp with different headers
+  writeFileSync(
+    join(projectDir, ".mcp.json"),
+    JSON.stringify({
+      mcpServers: {
+        "neon-mcp": {
+          url: "https://mcp.neon.tech/mcp",
+          headers: { Authorization: "Bearer token-b" },
+        },
+      },
+    }),
+  );
+
+  const result = runCli(["sync", "-y"], projectDir, homeDir);
+
+  const output = `${result.stdout}\n${result.stderr}`;
+  assert.match(output, /headers differ|Skipped|conflict/i);
+});
+
+test("sync: prints already in sync when nothing to change", () => {
+  const homeDir = createTempDir();
+  const projectDir = createTempDir();
+
+  // Cursor and Claude Code with identical server name and URL
+  const cursorDir = join(projectDir, ".cursor");
+  mkdirSync(cursorDir, { recursive: true });
+  writeFileSync(
+    join(cursorDir, "mcp.json"),
+    JSON.stringify({
+      mcpServers: {
+        neon: { url: "https://mcp.neon.tech/mcp" },
+      },
+    }),
+  );
+
+  writeFileSync(
+    join(projectDir, ".mcp.json"),
+    JSON.stringify({
+      mcpServers: {
+        neon: { url: "https://mcp.neon.tech/mcp" },
+      },
+    }),
+  );
+
+  const result = runCli(["sync", "-y"], projectDir, homeDir);
+
+  const output = `${result.stdout}\n${result.stderr}`;
+  assert.match(output, /already in sync/i);
+});
+
 cleanup();
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

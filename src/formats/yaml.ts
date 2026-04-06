@@ -15,6 +15,38 @@ export function readYamlConfig(filePath: string): ConfigFile {
   return (parsed as ConfigFile) || {};
 }
 
+export function removeYamlConfigKey(
+  filePath: string,
+  configKey: string,
+  serverName: string,
+): void {
+  if (!existsSync(filePath)) {
+    return;
+  }
+
+  const existing = readYamlConfig(filePath);
+  const keys = configKey.split(".");
+  let current: unknown = existing;
+  for (const key of keys) {
+    if (current && typeof current === "object" && key in current) {
+      current = (current as ConfigFile)[key];
+    } else {
+      return;
+    }
+  }
+
+  if (current && typeof current === "object" && serverName in current) {
+    delete (current as ConfigFile)[serverName];
+  }
+
+  const content = yaml.dump(existing, {
+    indent: 2,
+    lineWidth: -1,
+    noRefs: true,
+  });
+  writeFileSync(filePath, content);
+}
+
 export function writeYamlConfig(filePath: string, config: ConfigFile): void {
   const dir = dirname(filePath);
   if (!existsSync(dir)) {

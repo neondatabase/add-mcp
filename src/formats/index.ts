@@ -1,10 +1,57 @@
 import type { ConfigFile, ConfigFormat } from "../types.js";
-import { writeJsonConfig, setNestedValue } from "./json.js";
-import { writeYamlConfig } from "./yaml.js";
-import { writeTomlConfig } from "./toml.js";
+import {
+  readJsonConfig,
+  writeJsonConfig,
+  removeJsonConfigKey,
+  setNestedValue,
+} from "./json.js";
+import {
+  readYamlConfig,
+  writeYamlConfig,
+  removeYamlConfigKey,
+} from "./yaml.js";
+import {
+  readTomlConfig,
+  writeTomlConfig,
+  removeTomlConfigKey,
+} from "./toml.js";
 
 export { setNestedValue } from "./json.js";
 export { deepMerge, getNestedValue } from "./utils.js";
+
+export function readConfig(filePath: string, format: ConfigFormat): ConfigFile {
+  switch (format) {
+    case "json":
+      return readJsonConfig(filePath);
+    case "yaml":
+      return readYamlConfig(filePath);
+    case "toml":
+      return readTomlConfig(filePath);
+    default:
+      throw new Error(`Unsupported config format: ${format}`);
+  }
+}
+
+export function removeServerFromConfig(
+  filePath: string,
+  format: ConfigFormat,
+  configKey: string,
+  serverName: string,
+): void {
+  switch (format) {
+    case "json":
+      removeJsonConfigKey(filePath, configKey, serverName);
+      break;
+    case "yaml":
+      removeYamlConfigKey(filePath, configKey, serverName);
+      break;
+    case "toml":
+      removeTomlConfigKey(filePath, configKey, serverName);
+      break;
+    default:
+      throw new Error(`Unsupported config format: ${format}`);
+  }
+}
 
 export function writeConfig(
   filePath: string,

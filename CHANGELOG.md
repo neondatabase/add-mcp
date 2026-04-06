@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.8.0] - 2026-04-05
+
+- add `list` command to display installed MCP servers across detected agents
+- add `sync` / `unify` command to synchronize server configurations across agents
+- add `remove` command to remove MCP servers from agent configurations
+
 ## [1.7.0] - 2026-03-29
 
 - add `find` / `search` command to search MCP registries and install servers

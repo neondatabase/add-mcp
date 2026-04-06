@@ -157,7 +157,7 @@ export function updateGitignoreWithPaths(
   };
 }
 
-function getConfigPath(
+export function getConfigPath(
   agent: AgentConfig,
   options: InstallOptions = {},
 ): string {
@@ -175,7 +175,7 @@ function getConfigPath(
   return agent.configPath;
 }
 
-function getConfigKey(
+export function getConfigKey(
   agent: AgentConfig,
   options: InstallOptions = {},
 ): string {

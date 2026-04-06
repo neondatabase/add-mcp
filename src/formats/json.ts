@@ -81,6 +81,40 @@ export function writeJsonConfig(
   writeFileSync(filePath, JSON.stringify(mergedConfig, null, 2));
 }
 
+export function removeJsonConfigKey(
+  filePath: string,
+  configKey: string,
+  serverName: string,
+): void {
+  if (!existsSync(filePath)) {
+    return;
+  }
+
+  const originalContent = readFileSync(filePath, "utf-8");
+  const configKeyPath = configKey.split(".");
+
+  try {
+    const edits = jsonc.modify(
+      originalContent,
+      [...configKeyPath, serverName],
+      undefined,
+      { formattingOptions: detectIndent(originalContent) },
+    );
+    const updatedContent = jsonc.applyEdits(originalContent, edits);
+    writeFileSync(filePath, updatedContent);
+    return;
+  } catch {
+    // jsonc-parser failed, fall back to manual removal
+  }
+
+  const parsed = jsonc.parse(originalContent) as ConfigFile;
+  const servers = getNestedValue(parsed, configKey);
+  if (servers && typeof servers === "object" && serverName in servers) {
+    delete (servers as ConfigFile)[serverName];
+  }
+  writeFileSync(filePath, JSON.stringify(parsed, null, 2));
+}
+
 export function setNestedValue(
   obj: ConfigFile,
   path: string,
