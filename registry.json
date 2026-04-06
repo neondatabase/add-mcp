@@ -785,4 +785,39 @@
       "title": "Vercel"
     }
   }
+
+  ,
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "io.chartlibrary/chart-library-mcp",
+      "title": "Chart Library",
+      "description": "Historical chart pattern search engine. 19 MCP tools to search 24M+ pre-computed embeddings across 15K+ symbols and 10 years of data. Returns similar patterns with forward returns, regime analysis, anomaly detection, and trading signals.",
+      "repository": {
+        "url": "https://github.com/grahammccain/chart-library-mcp",
+        "source": "github"
+      },
+      "version": "1.1.0",
+      "websiteUrl": "https://chartlibrary.io",
+      "packages": [
+        {
+          "registryType": "pypi",
+          "registryBaseUrl": "https://pypi.org",
+          "identifier": "chartlibrary-mcp",
+          "version": "1.1.0",
+          "transport": {
+            "type": "stdio"
+          },
+          "environmentVariables": [
+            {
+              "name": "CHART_LIBRARY_API_KEY",
+              "description": "API key for paid tiers. Optional — free tier (200 calls/day) works without a key.",
+              "isRequired": false,
+              "isSecret": true
+            }
+          ]
+        }
+      ]
+    }
+  }
 ]
