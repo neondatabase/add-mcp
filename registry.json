@@ -933,24 +933,5 @@
       ],
       "title": "Vercel"
     }
-  },
-  {
-    "server": {
-      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-      "name": "io.github.xdevplatform/xmcp",
-      "title": "XMCP",
-      "description": "MCP server for the X API",
-      "repository": {
-        "url": "https://github.com/xdevplatform/xmcp",
-        "source": "github"
-      },
-      "version": "1.0.0",
-      "remotes": [
-        {
-          "type": "streamable-http",
-          "url": "http://127.0.0.1:8000/mcp"
-        }
-      ]
-    }
   }
 ]
