@@ -149,6 +149,7 @@ interface Options {
   type?: string;
   header?: string[];
   env?: string[];
+  args?: string[];
   yes?: boolean;
   all?: boolean;
   gitignore?: boolean;
@@ -234,6 +235,27 @@ function extractSubcommandOptionsFromArgv(): Partial<Options> {
     }
     if (arg === "--gitignore") {
       result.gitignore = true;
+      continue;
+    }
+    if (arg === "--header" && argv[i + 1]) {
+      const headers: string[] = result.header ? [...result.header] : [];
+      headers.push(argv[i + 1]!);
+      result.header = headers;
+      i += 1;
+      continue;
+    }
+    if (arg === "--env" && argv[i + 1]) {
+      const env: string[] = result.env ? [...result.env] : [];
+      env.push(argv[i + 1]!);
+      result.env = env;
+      i += 1;
+      continue;
+    }
+    if (arg === "--args" && argv[i + 1]) {
+      const args: string[] = result.args ? [...result.args] : [];
+      args.push(argv[i + 1]!);
+      result.args = args;
+      i += 1;
       continue;
     }
     if ((arg === "-n" || arg === "--name") && argv[i + 1]) {
@@ -390,6 +412,12 @@ program
     collect,
     [],
   )
+  .option(
+    "--args <arg>",
+    "Argument for local stdio servers (repeatable)",
+    collect,
+    [],
+  )
   .option("-y, --yes", "Skip confirmation prompts")
   .option("--all", "Install to all agents")
   .option("--gitignore", "Add generated project config files to .gitignore")
@@ -440,6 +468,10 @@ async function runFindCommand(
           ([key, value]) => `${key}: ${value}`,
         )
       : options.header,
+    env: installPlan.env
+      ? Object.entries(installPlan.env).map(([key, value]) => `${key}=${value}`)
+      : options.env,
+    args: installPlan.args ?? options.args,
   };
 
   await main(installPlan.target, mergedOptions);
@@ -1258,6 +1290,14 @@ async function main(target: string | undefined, options: Options) {
     );
   }
 
+  const argsValues = options.args ?? [];
+  const hasArgsValues = argsValues.length > 0;
+  if (hasArgsValues && isRemote) {
+    p.log.warn(
+      "--args is only used for local/package/command installs, ignoring",
+    );
+  }
+
   // Determine server name
   const serverName = options.name || parsed.inferredName;
   p.log.info(`Server name: ${chalk.cyan(serverName)}`);
@@ -1285,6 +1325,7 @@ async function main(target: string | undefined, options: Options) {
     transport: resolvedTransport,
     headers: isRemote && hasHeaderValues ? headerResult.headers : undefined,
     env: !isRemote && hasEnvValues ? envResult.env : undefined,
+    args: !isRemote && hasArgsValues ? argsValues : undefined,
   });
 
   // Determine target agents

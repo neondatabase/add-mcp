@@ -687,6 +687,44 @@ test("buildInstallPlanForEntry returns package target for package-only entry", a
   assert.strictEqual(plan?.headers, undefined);
 });
 
+test("buildInstallPlanForEntry includes only required package env/header/args placeholders in -y mode", async () => {
+  const plan = await buildInstallPlanForEntry(
+    {
+      name: "com.example/with-inputs",
+      description: "Package with optional and required values",
+      version: "1.0.0",
+      package: {
+        registryType: "npm",
+        identifier: "@example/with-inputs",
+        transport: { type: "stdio" },
+        environmentVariables: [
+          { name: "REQUIRED_ENV", isRequired: true },
+          { name: "OPTIONAL_ENV", isRequired: false },
+        ],
+        headers: [
+          { name: "Authorization", isRequired: true },
+          { name: "X-Optional", isRequired: false },
+        ],
+        args: [
+          { name: "--required-arg", isRequired: true },
+          { name: "--optional-arg", isRequired: false },
+        ],
+      },
+    },
+    { yes: true },
+  );
+
+  assert.ok(plan);
+  assert.strictEqual(plan?.target, "@example/with-inputs");
+  assert.deepStrictEqual(plan?.env, {
+    REQUIRED_ENV: "<your-variable-value-here>",
+  });
+  assert.deepStrictEqual(plan?.headers, {
+    Authorization: "<your-header-value-here>",
+  });
+  assert.deepStrictEqual(plan?.args, ["<your-variable-value-here>"]);
+});
+
 test("buildInstallPlanForEntry returns null when entry has no remotes or packages", async () => {
   const plan = await buildInstallPlanForEntry(
     {
