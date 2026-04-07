@@ -473,6 +473,31 @@
   {
     "server": {
       "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+      "name": "io.github.mastra-ai/mcp-docs-server",
+      "title": "Mastra",
+      "description": "Mastra documentation MCP server for agent development guidance and examples.",
+      "repository": {
+        "url": "https://github.com/mastra-ai/mastra",
+        "source": "github"
+      },
+      "version": "1.1.17",
+      "websiteUrl": "https://mastra.ai/docs/build-with-ai/mcp-docs-server",
+      "packages": [
+        {
+          "registryType": "npm",
+          "registryBaseUrl": "https://registry.npmjs.org",
+          "identifier": "@mastra/mcp-docs-server",
+          "version": "1.1.17",
+          "transport": {
+            "type": "stdio"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "server": {
+      "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
       "name": "com.mux/mcp",
       "title": "Mux",
       "description": "The official MCP Server for the Mux API",
