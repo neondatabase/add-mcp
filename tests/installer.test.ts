@@ -175,6 +175,26 @@ test("buildServerConfig - package appends args when provided", () => {
   ]);
 });
 
+test("buildServerConfig - package includes env and args together", () => {
+  const parsed = parseSource("mcp-server-postgres");
+  const config = buildServerConfig(parsed, {
+    env: {
+      DATABASE_URL: "postgres://localhost/my-db",
+    },
+    args: ["--read-only"],
+  });
+
+  assert.strictEqual(config.command, "npx");
+  assert.deepStrictEqual(config.args, [
+    "-y",
+    "mcp-server-postgres",
+    "--read-only",
+  ]);
+  assert.deepStrictEqual(config.env, {
+    DATABASE_URL: "postgres://localhost/my-db",
+  });
+});
+
 // buildServerConfig tests - Command
 test("buildServerConfig - npx command", () => {
   const parsed = parseSource("npx -y @org/mcp-server");
