@@ -379,10 +379,7 @@ function parseEnv(values: string[]): ParsedEnvResult {
   return { env, invalid };
 }
 
-import {
-  hasTemplateVars,
-  resolveRecordTemplates,
-} from "./template.js";
+import { hasTemplateVars, resolveRecordTemplates } from "./template.js";
 
 program
   .name("add-mcp")

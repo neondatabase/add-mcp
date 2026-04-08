@@ -39,8 +39,7 @@ export interface RegistryPackageDefinition {
   };
 }
 
-export interface RegistryNamedVariableDefinition
-  extends RegistryVariableDefinition {
+export interface RegistryNamedVariableDefinition extends RegistryVariableDefinition {
   name: string;
 }
 
@@ -469,9 +468,7 @@ function packageVariableFields(
     }));
 }
 
-function packageArgumentFields(
-  pkg: RegistryPackageDefinition,
-): PromptField[] {
+function packageArgumentFields(pkg: RegistryPackageDefinition): PromptField[] {
   const definitions = [
     ...(pkg.args ?? []),
     ...(pkg.arguments ?? []),
@@ -598,7 +595,8 @@ async function resolveInteractivePackage(
     .filter((value): value is string => typeof value === "string");
 
   return {
-    env: Object.keys(envResult.values).length > 0 ? envResult.values : undefined,
+    env:
+      Object.keys(envResult.values).length > 0 ? envResult.values : undefined,
     headers:
       Object.keys(headerResult.values).length > 0
         ? headerResult.values

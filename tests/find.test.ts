@@ -737,15 +737,9 @@ test("buildInstallPlanForEntry omits env/headers/args when all package inputs ar
         registryType: "npm",
         identifier: "@example/all-optional",
         transport: { type: "stdio" },
-        environmentVariables: [
-          { name: "OPT_ENV", isRequired: false },
-        ],
-        headers: [
-          { name: "X-Optional", isRequired: false },
-        ],
-        args: [
-          { name: "--verbose", isRequired: false },
-        ],
+        environmentVariables: [{ name: "OPT_ENV", isRequired: false }],
+        headers: [{ name: "X-Optional", isRequired: false }],
+        args: [{ name: "--verbose", isRequired: false }],
       },
     },
     { yes: true },
@@ -768,9 +762,7 @@ test("buildInstallPlanForEntry merges arguments and commandArguments fields in -
         registryType: "npm",
         identifier: "@example/multi-arg-fields",
         transport: { type: "stdio" },
-        arguments: [
-          { name: "--from-arguments", isRequired: true },
-        ],
+        arguments: [{ name: "--from-arguments", isRequired: true }],
         commandArguments: [
           { name: "--from-command-arguments", isRequired: true },
         ],

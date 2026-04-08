@@ -42,17 +42,14 @@ test("findTemplateVars extracts single variable", () => {
 });
 
 test("findTemplateVars extracts variable embedded in text", () => {
-  assert.deepStrictEqual(
-    findTemplateVars("Bearer ${TOKEN}"),
-    ["TOKEN"],
-  );
+  assert.deepStrictEqual(findTemplateVars("Bearer ${TOKEN}"), ["TOKEN"]);
 });
 
 test("findTemplateVars extracts multiple variables", () => {
-  assert.deepStrictEqual(
-    findTemplateVars("${HOST}:${PORT}/db"),
-    ["HOST", "PORT"],
-  );
+  assert.deepStrictEqual(findTemplateVars("${HOST}:${PORT}/db"), [
+    "HOST",
+    "PORT",
+  ]);
 });
 
 test("findTemplateVars ignores incomplete syntax", () => {
@@ -96,14 +93,11 @@ test("resolveTemplates substitutes template embedded in text", async () => {
 test("resolveTemplates substitutes multiple templates", async () => {
   const answers = ["localhost", "5432"];
   let callIndex = 0;
-  const result = await resolveTemplates(
-    "${HOST}:${PORT}/db",
-    async (name) => {
-      if (callIndex === 0) assert.strictEqual(name, "HOST");
-      if (callIndex === 1) assert.strictEqual(name, "PORT");
-      return answers[callIndex++]!;
-    },
-  );
+  const result = await resolveTemplates("${HOST}:${PORT}/db", async (name) => {
+    if (callIndex === 0) assert.strictEqual(name, "HOST");
+    if (callIndex === 1) assert.strictEqual(name, "PORT");
+    return answers[callIndex++]!;
+  });
   assert.strictEqual(result.cancelled, false);
   assert.strictEqual(result.resolved, "localhost:5432/db");
 });
@@ -204,9 +198,8 @@ test("resolveArrayTemplates resolves templates in array values", async () => {
 });
 
 test("resolveArrayTemplates returns cancelled on abort", async () => {
-  const result = await resolveArrayTemplates(
-    ["${A}", "${B}"],
-    async () => Symbol("cancel"),
+  const result = await resolveArrayTemplates(["${A}", "${B}"], async () =>
+    Symbol("cancel"),
   );
   assert.strictEqual(result.cancelled, true);
 });
