@@ -379,6 +379,12 @@ function parseEnv(values: string[]): ParsedEnvResult {
   return { env, invalid };
 }
 
+import {
+  hasTemplateVars,
+  resolveRecordTemplates,
+  resolveArrayTemplates,
+} from "./template.js";
+
 program
   .name("add-mcp")
   .description(
@@ -1298,6 +1304,54 @@ async function main(target: string | undefined, options: Options) {
     );
   }
 
+  const promptTemplateVar = (varName: string) =>
+    p.text({
+      message: `Enter value for ${varName}`,
+      placeholder: `<${varName}>`,
+    });
+
+  if (
+    !options.yes &&
+    hasHeaderValues &&
+    hasTemplateVars(headerResult.headers)
+  ) {
+    const result = await resolveRecordTemplates(
+      headerResult.headers,
+      promptTemplateVar,
+    );
+    if (result.cancelled) {
+      p.cancel("Cancelled");
+      process.exit(0);
+    }
+    for (const [key, value] of Object.entries(result.resolved)) {
+      headerResult.headers[key] = value;
+    }
+  }
+
+  if (!options.yes && hasEnvValues && hasTemplateVars(envResult.env)) {
+    const result = await resolveRecordTemplates(
+      envResult.env,
+      promptTemplateVar,
+    );
+    if (result.cancelled) {
+      p.cancel("Cancelled");
+      process.exit(0);
+    }
+    for (const [key, value] of Object.entries(result.resolved)) {
+      envResult.env[key] = value;
+    }
+  }
+
+  let resolvedArgs = argsValues;
+  if (!options.yes && hasArgsValues && hasTemplateVars(argsValues)) {
+    const result = await resolveArrayTemplates(argsValues, promptTemplateVar);
+    if (result.cancelled) {
+      p.cancel("Cancelled");
+      process.exit(0);
+    }
+    resolvedArgs = result.resolved;
+  }
+
   // Determine server name
   const serverName = options.name || parsed.inferredName;
   p.log.info(`Server name: ${chalk.cyan(serverName)}`);
@@ -1325,7 +1379,7 @@ async function main(target: string | undefined, options: Options) {
     transport: resolvedTransport,
     headers: isRemote && hasHeaderValues ? headerResult.headers : undefined,
     env: !isRemote && hasEnvValues ? envResult.env : undefined,
-    args: !isRemote && hasArgsValues ? argsValues : undefined,
+    args: !isRemote && hasArgsValues ? resolvedArgs : undefined,
   });
 
   // Determine target agents
