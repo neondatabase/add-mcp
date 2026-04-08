@@ -382,7 +382,6 @@ function parseEnv(values: string[]): ParsedEnvResult {
 import {
   hasTemplateVars,
   resolveRecordTemplates,
-  resolveArrayTemplates,
 } from "./template.js";
 
 program
@@ -1342,16 +1341,6 @@ async function main(target: string | undefined, options: Options) {
     }
   }
 
-  let resolvedArgs = argsValues;
-  if (!options.yes && hasArgsValues && hasTemplateVars(argsValues)) {
-    const result = await resolveArrayTemplates(argsValues, promptTemplateVar);
-    if (result.cancelled) {
-      p.cancel("Cancelled");
-      process.exit(0);
-    }
-    resolvedArgs = result.resolved;
-  }
-
   // Determine server name
   const serverName = options.name || parsed.inferredName;
   p.log.info(`Server name: ${chalk.cyan(serverName)}`);
@@ -1379,7 +1368,7 @@ async function main(target: string | undefined, options: Options) {
     transport: resolvedTransport,
     headers: isRemote && hasHeaderValues ? headerResult.headers : undefined,
     env: !isRemote && hasEnvValues ? envResult.env : undefined,
-    args: !isRemote && hasArgsValues ? resolvedArgs : undefined,
+    args: !isRemote && hasArgsValues ? argsValues : undefined,
   });
 
   // Determine target agents
