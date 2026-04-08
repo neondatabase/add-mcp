@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.9.0] - 2026-04-08
+
+- prompt for `${VAR}` template values in `--env` and `--header` flags during interactive mode
+- prompt for package environment variables, headers, and arguments during `find` search installs
+
 ## [1.8.1] - 2026-04-07
 
 - fix `find` / `search` package installs to stop pinning npm versions and resolve latest implicitly

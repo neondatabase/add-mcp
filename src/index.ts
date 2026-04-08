@@ -149,6 +149,7 @@ interface Options {
   type?: string;
   header?: string[];
   env?: string[];
+  args?: string[];
   yes?: boolean;
   all?: boolean;
   gitignore?: boolean;
@@ -234,6 +235,27 @@ function extractSubcommandOptionsFromArgv(): Partial<Options> {
     }
     if (arg === "--gitignore") {
       result.gitignore = true;
+      continue;
+    }
+    if (arg === "--header" && argv[i + 1]) {
+      const headers: string[] = result.header ? [...result.header] : [];
+      headers.push(argv[i + 1]!);
+      result.header = headers;
+      i += 1;
+      continue;
+    }
+    if (arg === "--env" && argv[i + 1]) {
+      const env: string[] = result.env ? [...result.env] : [];
+      env.push(argv[i + 1]!);
+      result.env = env;
+      i += 1;
+      continue;
+    }
+    if (arg === "--args" && argv[i + 1]) {
+      const args: string[] = result.args ? [...result.args] : [];
+      args.push(argv[i + 1]!);
+      result.args = args;
+      i += 1;
       continue;
     }
     if ((arg === "-n" || arg === "--name") && argv[i + 1]) {
@@ -357,6 +379,8 @@ function parseEnv(values: string[]): ParsedEnvResult {
   return { env, invalid };
 }
 
+import { hasTemplateVars, resolveRecordTemplates } from "./template.js";
+
 program
   .name("add-mcp")
   .description(
@@ -387,6 +411,12 @@ program
   .option(
     "--env <env>",
     "Environment variable for local stdio servers (repeatable, 'KEY=VALUE')",
+    collect,
+    [],
+  )
+  .option(
+    "--args <arg>",
+    "Argument for local stdio servers (repeatable)",
     collect,
     [],
   )
@@ -440,6 +470,10 @@ async function runFindCommand(
           ([key, value]) => `${key}: ${value}`,
         )
       : options.header,
+    env: installPlan.env
+      ? Object.entries(installPlan.env).map(([key, value]) => `${key}=${value}`)
+      : options.env,
+    args: installPlan.args ?? options.args,
   };
 
   await main(installPlan.target, mergedOptions);
@@ -1258,6 +1292,52 @@ async function main(target: string | undefined, options: Options) {
     );
   }
 
+  const argsValues = options.args ?? [];
+  const hasArgsValues = argsValues.length > 0;
+  if (hasArgsValues && isRemote) {
+    p.log.warn(
+      "--args is only used for local/package/command installs, ignoring",
+    );
+  }
+
+  const promptTemplateVar = (varName: string) =>
+    p.text({
+      message: `Enter value for ${varName}`,
+      placeholder: `<${varName}>`,
+    });
+
+  if (
+    !options.yes &&
+    hasHeaderValues &&
+    hasTemplateVars(headerResult.headers)
+  ) {
+    const result = await resolveRecordTemplates(
+      headerResult.headers,
+      promptTemplateVar,
+    );
+    if (result.cancelled) {
+      p.cancel("Cancelled");
+      process.exit(0);
+    }
+    for (const [key, value] of Object.entries(result.resolved)) {
+      headerResult.headers[key] = value;
+    }
+  }
+
+  if (!options.yes && hasEnvValues && hasTemplateVars(envResult.env)) {
+    const result = await resolveRecordTemplates(
+      envResult.env,
+      promptTemplateVar,
+    );
+    if (result.cancelled) {
+      p.cancel("Cancelled");
+      process.exit(0);
+    }
+    for (const [key, value] of Object.entries(result.resolved)) {
+      envResult.env[key] = value;
+    }
+  }
+
   // Determine server name
   const serverName = options.name || parsed.inferredName;
   p.log.info(`Server name: ${chalk.cyan(serverName)}`);
@@ -1285,6 +1365,7 @@ async function main(target: string | undefined, options: Options) {
     transport: resolvedTransport,
     headers: isRemote && hasHeaderValues ? headerResult.headers : undefined,
     env: !isRemote && hasEnvValues ? envResult.env : undefined,
+    args: !isRemote && hasArgsValues ? argsValues : undefined,
   });
 
   // Determine target agents

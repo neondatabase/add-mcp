@@ -1,6 +1,6 @@
 {
   "name": "add-mcp",
-  "version": "1.8.1",
+  "version": "1.9.0",
   "description": "Add MCP servers to your favorite coding agents with a single command.",
   "author": "Andre Landgraf <andre@neon.tech>",
   "license": "Apache-2.0",
@@ -16,8 +16,8 @@
     "fmt": "prettier --write .",
     "build": "tsup src/index.ts --format esm --dts --clean",
     "dev": "tsx src/index.ts",
-    "test": "tsx tests/source-parser.test.ts && tsx tests/agents.test.ts && tsx tests/config.test.ts && tsx tests/installer.test.ts && tsx tests/find.test.ts && tsx tests/reader.test.ts && tsx tests/formats-remove.test.ts && tsx tests/e2e/install.test.ts && tsx tests/e2e/cli.test.ts",
-    "test:unit": "tsx tests/source-parser.test.ts && tsx tests/agents.test.ts && tsx tests/config.test.ts && tsx tests/installer.test.ts && tsx tests/find.test.ts && tsx tests/reader.test.ts && tsx tests/formats-remove.test.ts",
+    "test": "tsx tests/source-parser.test.ts && tsx tests/agents.test.ts && tsx tests/config.test.ts && tsx tests/installer.test.ts && tsx tests/find.test.ts && tsx tests/template.test.ts && tsx tests/reader.test.ts && tsx tests/formats-remove.test.ts && tsx tests/e2e/install.test.ts && tsx tests/e2e/cli.test.ts",
+    "test:unit": "tsx tests/source-parser.test.ts && tsx tests/agents.test.ts && tsx tests/config.test.ts && tsx tests/installer.test.ts && tsx tests/find.test.ts && tsx tests/template.test.ts && tsx tests/reader.test.ts && tsx tests/formats-remove.test.ts",
     "registry:sort": "tsx scripts/sort-registry.ts",
     "registry:verify": "tsx scripts/verify-registry.ts",
     "test:e2e": "tsx tests/e2e/install.test.ts && tsx tests/e2e/cli.test.ts",
