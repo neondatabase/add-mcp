@@ -4,6 +4,7 @@ import type {
   AgentType,
   AgentConfig,
   McpServerConfig,
+  PackageArgument,
   ParsedSource,
   TransportType,
 } from "./types.js";
@@ -37,6 +38,8 @@ export interface BuildServerConfigOptions {
   headers?: Record<string, string>;
   /** Environment variables for local stdio servers */
   env?: Record<string, string>;
+  /** Package arguments from server.json spec (appended after package name) */
+  packageArguments?: PackageArgument[];
 }
 
 export interface UpdateGitignoreOptions {
@@ -47,6 +50,27 @@ export interface UpdateGitignoreOptions {
 export interface UpdateGitignoreResult {
   path: string;
   added: string[];
+}
+
+export function resolvePackageArguments(
+  packageArguments: PackageArgument[],
+): string[] {
+  const result: string[] = [];
+  for (const arg of packageArguments) {
+    const resolvedValue = arg.value ?? arg.default;
+    if (arg.type === "positional") {
+      if (resolvedValue && resolvedValue.trim() !== "") {
+        result.push(resolvedValue);
+      }
+    } else if (arg.type === "named" && arg.name) {
+      if (resolvedValue && resolvedValue.trim() !== "") {
+        result.push(arg.name, resolvedValue);
+      } else {
+        result.push(arg.name);
+      }
+    }
+  }
+  return result;
 }
 
 export function buildServerConfig(
@@ -82,9 +106,14 @@ export function buildServerConfig(
     return config;
   }
 
+  const extraArgs =
+    options.packageArguments && options.packageArguments.length > 0
+      ? resolvePackageArguments(options.packageArguments)
+      : [];
+
   const config: McpServerConfig = {
     command: "npx",
-    args: ["-y", parsed.value],
+    args: ["-y", parsed.value, ...extraArgs],
   };
 
   if (options.env && Object.keys(options.env).length > 0) {

@@ -1,5 +1,5 @@
 import * as p from "@clack/prompts";
-import type { TransportType } from "./types.js";
+import type { PackageArgument, TransportType } from "./types.js";
 
 export type RegistryRemoteTransport = "streamable-http" | "sse";
 
@@ -32,6 +32,7 @@ export interface RegistryPackageDefinition {
   transport: {
     type: "stdio";
   };
+  packageArguments?: PackageArgument[];
 }
 
 export interface RegistryServerEntry {
@@ -55,6 +56,7 @@ export interface FindInstallPlan {
   serverName: string;
   transport?: TransportType;
   headers?: Record<string, string>;
+  packageArguments?: PackageArgument[];
 }
 
 export interface PromptField {
@@ -522,6 +524,7 @@ export async function buildInstallPlanForEntry(
     return {
       target: formatPackageTarget(pkg),
       serverName: resolveServerName(entry),
+      packageArguments: pkg.packageArguments,
     };
   }
 

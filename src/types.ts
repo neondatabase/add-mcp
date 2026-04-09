@@ -70,6 +70,18 @@ export interface ParsedSource {
 
 export type TransportType = "sse" | "http";
 
+export interface PackageArgument {
+  type: "positional" | "named";
+  name?: string;
+  value?: string;
+  valueHint?: string;
+  description?: string;
+  default?: string;
+  isRequired?: boolean;
+  isRepeated?: boolean;
+  choices?: string[];
+}
+
 export interface McpServerConfig {
   /** For remote servers */
   type?: TransportType;

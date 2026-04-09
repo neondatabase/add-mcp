@@ -20,6 +20,7 @@ import { join } from "node:path";
 import {
   buildServerConfig,
   installServer,
+  resolvePackageArguments,
   updateGitignoreWithPaths,
 } from "../src/installer.js";
 import { agents } from "../src/agents.js";
@@ -157,6 +158,156 @@ test("buildServerConfig - package includes env when provided", () => {
     API_KEY: "secret",
     DATABASE_URL: "postgres://localhost/my-db",
   });
+});
+
+// buildServerConfig tests - packageArguments
+test("buildServerConfig - package with positional packageArguments", () => {
+  const parsed = parseSource("mcp-server-sample");
+  const config = buildServerConfig(parsed, {
+    packageArguments: [
+      { type: "positional", value: "mcp" },
+      { type: "positional", value: "start" },
+    ],
+  });
+
+  assert.strictEqual(config.command, "npx");
+  assert.deepStrictEqual(config.args, [
+    "-y",
+    "mcp-server-sample",
+    "mcp",
+    "start",
+  ]);
+});
+
+test("buildServerConfig - package with named packageArguments", () => {
+  const parsed = parseSource("@modelcontextprotocol/server-postgres");
+  const config = buildServerConfig(parsed, {
+    packageArguments: [{ type: "named", name: "--mode", value: "local" }],
+  });
+
+  assert.strictEqual(config.command, "npx");
+  assert.deepStrictEqual(config.args, [
+    "-y",
+    "@modelcontextprotocol/server-postgres",
+    "--mode",
+    "local",
+  ]);
+});
+
+test("buildServerConfig - package with named packageArguments using default", () => {
+  const parsed = parseSource("@modelcontextprotocol/server-filesystem");
+  const config = buildServerConfig(parsed, {
+    packageArguments: [{ type: "named", name: "--port", default: "3000" }],
+  });
+
+  assert.strictEqual(config.command, "npx");
+  assert.deepStrictEqual(config.args, [
+    "-y",
+    "@modelcontextprotocol/server-filesystem",
+    "--port",
+    "3000",
+  ]);
+});
+
+test("buildServerConfig - package with mixed packageArguments", () => {
+  const parsed = parseSource("mcp-server-sample");
+  const config = buildServerConfig(parsed, {
+    packageArguments: [
+      { type: "positional", value: "mcp" },
+      { type: "named", name: "-t", default: "stdio" },
+    ],
+  });
+
+  assert.strictEqual(config.command, "npx");
+  assert.deepStrictEqual(config.args, [
+    "-y",
+    "mcp-server-sample",
+    "mcp",
+    "-t",
+    "stdio",
+  ]);
+});
+
+test("buildServerConfig - package with named flag (no value)", () => {
+  const parsed = parseSource("mcp-server-postgres");
+  const config = buildServerConfig(parsed, {
+    packageArguments: [{ type: "named", name: "--verbose" }],
+  });
+
+  assert.strictEqual(config.command, "npx");
+  assert.deepStrictEqual(config.args, [
+    "-y",
+    "mcp-server-postgres",
+    "--verbose",
+  ]);
+});
+
+test("buildServerConfig - package with empty packageArguments", () => {
+  const parsed = parseSource("mcp-server-postgres");
+  const config = buildServerConfig(parsed, {
+    packageArguments: [],
+  });
+
+  assert.strictEqual(config.command, "npx");
+  assert.deepStrictEqual(config.args, ["-y", "mcp-server-postgres"]);
+});
+
+test("buildServerConfig - package with packageArguments and env", () => {
+  const parsed = parseSource("mcp-server-postgres");
+  const config = buildServerConfig(parsed, {
+    packageArguments: [{ type: "positional", value: "mcp" }],
+    env: { API_KEY: "secret" },
+  });
+
+  assert.strictEqual(config.command, "npx");
+  assert.deepStrictEqual(config.args, ["-y", "mcp-server-postgres", "mcp"]);
+  assert.deepStrictEqual(config.env, { API_KEY: "secret" });
+});
+
+test("buildServerConfig - packageArguments skips positional without value", () => {
+  const parsed = parseSource("mcp-server-sample");
+  const config = buildServerConfig(parsed, {
+    packageArguments: [
+      { type: "positional", valueHint: "target_dir", isRequired: true },
+      { type: "positional", value: "start" },
+    ],
+  });
+
+  assert.strictEqual(config.command, "npx");
+  assert.deepStrictEqual(config.args, ["-y", "mcp-server-sample", "start"]);
+});
+
+test("buildServerConfig - packageArguments positional uses default when no value", () => {
+  const parsed = parseSource("mcp-server-sample");
+  const config = buildServerConfig(parsed, {
+    packageArguments: [
+      { type: "positional", valueHint: "target_dir", default: "/tmp/path" },
+    ],
+  });
+
+  assert.strictEqual(config.command, "npx");
+  assert.deepStrictEqual(config.args, ["-y", "mcp-server-sample", "/tmp/path"]);
+});
+
+test("buildServerConfig - packageArguments ignored for remote sources", () => {
+  const parsed = parseSource("https://mcp.example.com/api");
+  const config = buildServerConfig(parsed, {
+    packageArguments: [{ type: "positional", value: "mcp" }],
+  });
+
+  assert.strictEqual(config.type, "http");
+  assert.strictEqual(config.url, "https://mcp.example.com/api");
+  assert.strictEqual(config.command, undefined);
+});
+
+test("buildServerConfig - packageArguments ignored for command sources", () => {
+  const parsed = parseSource("node /path/to/server.js");
+  const config = buildServerConfig(parsed, {
+    packageArguments: [{ type: "positional", value: "mcp" }],
+  });
+
+  assert.strictEqual(config.command, "node");
+  assert.deepStrictEqual(config.args, ["/path/to/server.js"]);
 });
 
 // buildServerConfig tests - Command
@@ -597,6 +748,65 @@ test("updateGitignoreWithPaths - appends only new local paths", () => {
     readFileSync(gitignorePath, "utf-8"),
     ".cursor/mcp.json\n.vscode/mcp.json\n",
   );
+});
+
+// resolvePackageArguments tests
+test("resolvePackageArguments - positional with value", () => {
+  const result = resolvePackageArguments([
+    { type: "positional", value: "mcp" },
+    { type: "positional", value: "start" },
+  ]);
+  assert.deepStrictEqual(result, ["mcp", "start"]);
+});
+
+test("resolvePackageArguments - named with value", () => {
+  const result = resolvePackageArguments([
+    { type: "named", name: "--mode", value: "local" },
+  ]);
+  assert.deepStrictEqual(result, ["--mode", "local"]);
+});
+
+test("resolvePackageArguments - named with default (no value)", () => {
+  const result = resolvePackageArguments([
+    { type: "named", name: "--port", default: "3000" },
+  ]);
+  assert.deepStrictEqual(result, ["--port", "3000"]);
+});
+
+test("resolvePackageArguments - named flag without value or default", () => {
+  const result = resolvePackageArguments([
+    { type: "named", name: "--verbose" },
+  ]);
+  assert.deepStrictEqual(result, ["--verbose"]);
+});
+
+test("resolvePackageArguments - value takes precedence over default", () => {
+  const result = resolvePackageArguments([
+    { type: "named", name: "--port", value: "8080", default: "3000" },
+  ]);
+  assert.deepStrictEqual(result, ["--port", "8080"]);
+});
+
+test("resolvePackageArguments - skips positional without value or default", () => {
+  const result = resolvePackageArguments([
+    { type: "positional", valueHint: "target_dir", isRequired: true },
+  ]);
+  assert.deepStrictEqual(result, []);
+});
+
+test("resolvePackageArguments - mixed types", () => {
+  const result = resolvePackageArguments([
+    { type: "positional", value: "mcp" },
+    { type: "named", name: "-t", value: "stdio" },
+    { type: "positional", value: "start" },
+    { type: "named", name: "--verbose" },
+  ]);
+  assert.deepStrictEqual(result, ["mcp", "-t", "stdio", "start", "--verbose"]);
+});
+
+test("resolvePackageArguments - empty array", () => {
+  const result = resolvePackageArguments([]);
+  assert.deepStrictEqual(result, []);
 });
 
 // Cleanup and summary
