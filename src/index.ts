@@ -4,7 +4,7 @@ import { program } from "commander";
 import * as p from "@clack/prompts";
 import chalk from "chalk";
 import { homedir } from "os";
-import type { AgentType, TransportType } from "./types.js";
+import type { AgentType, PackageArgument, TransportType } from "./types.js";
 import { agentAliases } from "./types.js";
 import {
   agents,
@@ -152,6 +152,7 @@ interface Options {
   yes?: boolean;
   all?: boolean;
   gitignore?: boolean;
+  packageArguments?: PackageArgument[];
 }
 
 async function ensureFindRegistriesConfigured(
@@ -440,6 +441,7 @@ async function runFindCommand(
           ([key, value]) => `${key}: ${value}`,
         )
       : options.header,
+    packageArguments: installPlan.packageArguments,
   };
 
   await main(installPlan.target, mergedOptions);
@@ -1285,6 +1287,7 @@ async function main(target: string | undefined, options: Options) {
     transport: resolvedTransport,
     headers: isRemote && hasHeaderValues ? headerResult.headers : undefined,
     env: !isRemote && hasEnvValues ? envResult.env : undefined,
+    packageArguments: options.packageArguments,
   });
 
   // Determine target agents
