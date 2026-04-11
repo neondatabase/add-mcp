@@ -321,6 +321,10 @@ test("E2E: Install to Gemini CLI (local)", () => {
   assert.ok(mcpServers.github);
 });
 
+// ============================================
+// E2E Tests: JSON format agents (global install)
+// ============================================
+
 test("E2E: Install to Windsurf (global) writes global mcp_config.json", () => {
   const tempDir = createTempDir();
   const parsed = parseSource("https://mcp.example.com/api");
