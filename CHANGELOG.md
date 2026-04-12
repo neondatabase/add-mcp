@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.8.2] - 2026-04-11
+
+- add `windsurf` support with global installs written to `~/.codeium/windsurf/mcp_config.json` (`mcpServers`)
+
 ## [1.8.1] - 2026-04-07
 
 - fix `find` / `search` package installs to stop pinning npm versions and resolve latest implicitly
